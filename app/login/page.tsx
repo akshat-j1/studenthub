@@ -1,18 +1,49 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { FormEvent, useState } from 'react';
 
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+
+function getReadableLoginError(message: string) {
+  const normalized = message.toLowerCase();
+
+  if (normalized.includes('invalid login credentials')) {
+    return 'Invalid email or password.';
+  }
+  if (normalized.includes('rate limit')) {
+    return 'Too many login attempts. Please wait a moment and try again.';
+  }
+  if (normalized.includes('email not confirmed')) {
+    return 'Login is blocked by your Supabase project settings (email confirmation is enabled). Disable email confirmation in Supabase Auth settings.';
+  }
+
+  return message;
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const { login } = useAuth();
-  const router = useRouter();
+
+  const resetAuthState = async () => {
+    setResetting(true);
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    if (typeof window !== 'undefined') {
+      for (const key of Object.keys(window.localStorage)) {
+        if (key.toLowerCase().includes('supabase')) {
+          window.localStorage.removeItem(key);
+        }
+      }
+      window.location.href = '/login';
+    }
+  };
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -22,11 +53,9 @@ export default function LoginPage() {
     setLoading(false);
 
     if (message) {
-      setError(message);
+      setError(getReadableLoginError(message));
       return;
     }
-
-    router.replace('/');
   };
 
   return (
@@ -61,6 +90,22 @@ export default function LoginPage() {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
+        <div className="mt-4 space-y-2">
+          <Link
+            href="/"
+            className="block w-full rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-2.5 text-center text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+          >
+            Continue as Guest
+          </Link>
+          <button
+            type="button"
+            onClick={resetAuthState}
+            disabled={resetting}
+            className="block w-full rounded-xl border border-amber-300 dark:border-amber-700 px-4 py-2.5 text-sm font-semibold text-amber-700 dark:text-amber-300 disabled:opacity-60"
+          >
+            {resetting ? 'Resetting...' : 'Reset Auth State'}
+          </button>
+        </div>
 
         <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
           No account?{' '}

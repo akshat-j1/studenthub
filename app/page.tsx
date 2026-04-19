@@ -10,8 +10,9 @@ import OpportunityCard from '@/components/OpportunityCard';
 import SectionHeader from '@/components/SectionHeader';
 import { useSavedIds } from '@/hooks/use-saved-ids';
 
+import { opportunities as localOpportunities } from '@/lib/data';
 import type { Opportunity } from '@/lib/data';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseConfigError } from '@/lib/supabase';
 
 const statsData = [
   { label: 'Active Hackathons', value: '50+', icon: Trophy, color: 'text-blue-500' },
@@ -51,13 +52,16 @@ export default function Home() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [search, setSearch] = useState('');
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(Boolean(supabase));
   const [filters, setFilters] = useState<Filters>({
     beginnerFriendly: false,
     remote: false,
     paid: false,
   });
   const [showSavedOnly, setShowSavedOnly] = useState(false);
+  const [aiResult, setAiResult] = useState('');
+  const [aiError, setAiError] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
   const { savedIds } = useSavedIds();
 
   const toggleTheme = () => {
@@ -67,14 +71,18 @@ export default function Home() {
   };
 
   useEffect(() => {
+    if (!supabase) return;
+    const supabaseClient = supabase;
+
     let cancelled = false;
 
     const fetchOpportunities = async () => {
-      const { data, error } = await supabase.from('opportunities').select('*');
+      const { data, error } = await supabaseClient.from('opportunities').select('*');
 
       if (!cancelled) {
-        if (error || !data) {
-          setOpportunities([]);
+        if (error || !data || data.length === 0) {
+          // Fall back to bundled demo content when DB read is blocked or empty.
+          setOpportunities(localOpportunities);
         } else {
           setOpportunities(data as Opportunity[]);
         }
@@ -121,6 +129,10 @@ export default function Home() {
         .slice(0, 6),
     [filteredHackathons, filteredInternships, filteredOffers]
   );
+  const currentOpportunityList = useMemo(
+    () => [...filteredHackathons, ...filteredInternships, ...filteredOffers],
+    [filteredHackathons, filteredInternships, filteredOffers]
+  );
 
   const totalResults = filteredHackathons.length + filteredInternships.length + filteredOffers.length;
 
@@ -140,6 +152,32 @@ export default function Home() {
   };
 
   const paginationResetKey = `${search}|${filters.beginnerFriendly}|${filters.remote}|${filters.paid}|${showSavedOnly}|${savedIds.join(',')}`;
+
+  const getAiRecommendations = async () => {
+    setAiError('');
+    setAiResult('');
+    setAiLoading(true);
+
+    try {
+      const response = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ opportunities: currentOpportunityList }),
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setAiError(payload?.error ?? 'Failed to fetch AI recommendations.');
+        return;
+      }
+
+      setAiResult(payload?.result ?? 'No recommendations generated.');
+    } catch {
+      setAiError('Failed to fetch AI recommendations.');
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
@@ -277,8 +315,45 @@ export default function Home() {
       </section>
 
       {/* Main Content */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800/70 p-5 sm:p-6 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">AI Recommendations</h2>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Get top 5 recommendations from your current opportunity list.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={getAiRecommendations}
+              disabled={aiLoading || currentOpportunityList.length === 0}
+              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {aiLoading ? 'Generating...' : 'Get AI Recommendations'}
+            </button>
+          </div>
+
+          {aiError && (
+            <div className="mt-4 rounded-xl border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+              {aiError}
+            </div>
+          )}
+
+          {aiResult && (
+            <div className="mt-4 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/60 dark:bg-blue-950/20 px-4 py-3 text-sm leading-relaxed text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
+              {aiResult}
+            </div>
+          )}
+        </div>
+      </section>
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-16">
-        {isLoading ? (
+        {supabaseConfigError ? (
+          <div className="rounded-2xl border border-red-200 dark:border-red-800/60 bg-red-50/80 dark:bg-red-950/20 px-6 py-5 text-sm text-red-700 dark:text-red-300">
+            {supabaseConfigError}
+          </div>
+        ) : isLoading ? (
           <p className="text-sm text-center text-gray-500 dark:text-gray-400">Loading...</p>
         ) : noSavedBookmarks ? (
           <SavedBookmarksEmptyState onExit={() => setShowSavedOnly(false)} />

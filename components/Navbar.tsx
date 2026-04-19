@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Moon, Sun, GraduationCap, Menu, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
@@ -14,6 +15,7 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logoutPending, setLogoutPending] = useState(false);
+  const [guestId, setGuestId] = useState('');
   const router = useRouter();
   const { user, logout } = useAuth();
 
@@ -21,6 +23,21 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
     const handler = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handler);
     return () => window.removeEventListener('scroll', handler);
+  }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const existingGuestId = window.localStorage.getItem('studenthub_guest_id');
+      if (existingGuestId) {
+        setGuestId(existingGuestId);
+        return;
+      }
+      const createdGuestId = `guest-${Math.random().toString(36).slice(2, 8)}`;
+      window.localStorage.setItem('studenthub_guest_id', createdGuestId);
+      setGuestId(createdGuestId);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   const navLinks = [
@@ -68,7 +85,7 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
           </div>
 
           <div className="flex items-center gap-2">
-            {user && (
+            {user ? (
               <button
                 onClick={handleLogout}
                 disabled={logoutPending}
@@ -76,6 +93,26 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
               >
                 {logoutPending ? 'Logging out...' : 'Logout'}
               </button>
+            ) : (
+              <>
+                {guestId && (
+                  <span className="hidden sm:inline-flex rounded-full border border-amber-300/70 dark:border-amber-700/70 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                    {guestId}
+                  </span>
+                )}
+                <Link
+                  href="/login"
+                  className="hidden sm:inline-flex px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-all"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/signup"
+                  className="hidden sm:inline-flex rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-3 py-1.5 text-xs sm:text-sm font-semibold text-white"
+                >
+                  Sign up
+                </Link>
+              </>
             )}
             <button
               onClick={onThemeToggle}
@@ -108,7 +145,7 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
               {link.label}
             </a>
           ))}
-          {user && (
+          {user ? (
             <button
               onClick={handleLogout}
               disabled={logoutPending}
@@ -116,6 +153,26 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
             >
               {logoutPending ? 'Logging out...' : 'Logout'}
             </button>
+          ) : (
+            <>
+              {guestId && (
+                <p className="px-4 pt-2 text-xs font-semibold text-amber-700 dark:text-amber-300">Guest: {guestId}</p>
+              )}
+              <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className="block px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-all"
+              >
+                Login
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setMobileOpen(false)}
+                className="block px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg transition-all"
+              >
+                Sign up
+              </Link>
+            </>
           )}
         </div>
       )}

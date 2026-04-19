@@ -5,6 +5,26 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 
+const GUEST_SAVED_IDS_KEY = 'studenthub_guest_saved_ids';
+
+function readGuestSavedIds(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(GUEST_SAVED_IDS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((value): value is string => typeof value === 'string');
+  } catch {
+    return [];
+  }
+}
+
+function writeGuestSavedIds(ids: string[]) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(GUEST_SAVED_IDS_KEY, JSON.stringify(ids));
+}
+
 type SavedIdsContextValue = {
   savedIds: string[];
   loading: boolean;
@@ -17,18 +37,21 @@ const SavedIdsContext = createContext<SavedIdsContextValue | undefined>(undefine
 
 export function SavedIdsProvider({ children }: { children: React.ReactNode }) {
   const { user, loading: authLoading } = useAuth();
-  const [savedIds, setSavedIds] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [savedIds, setSavedIds] = useState<string[]>(() => readGuestSavedIds());
+  const [loading, setLoading] = useState(Boolean(supabase));
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!supabase) return;
+    const supabaseClient = supabase;
+
     let cancelled = false;
     const syncSavedIds = async () => {
       if (authLoading) return;
 
       if (!user) {
         if (!cancelled) {
-          setSavedIds([]);
+          setSavedIds(readGuestSavedIds());
           setLoading(false);
           setError(null);
         }
@@ -38,7 +61,7 @@ export function SavedIdsProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       setError(null);
 
-      const { data, error: queryError } = await supabase
+      const { data, error: queryError } = await supabaseClient
         .from('saved_opportunities')
         .select('opportunity_id')
         .eq('user_id', user.id);
@@ -70,15 +93,26 @@ export function SavedIdsProvider({ children }: { children: React.ReactNode }) {
   const toggleSaved = useCallback(
     async (opportunityId: string) => {
       if (!user) {
-        setError('You must be logged in to save opportunities.');
+        setError(null);
+        const currentlySaved = savedIds.includes(opportunityId);
+        const nextSavedIds = currentlySaved
+          ? savedIds.filter((id) => id !== opportunityId)
+          : [...savedIds, opportunityId];
+        setSavedIds(nextSavedIds);
+        writeGuestSavedIds(nextSavedIds);
         return;
       }
+      if (!supabase) {
+        setError('Supabase is not configured. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local.');
+        return;
+      }
+      const supabaseClient = supabase;
 
       setError(null);
       const currentlySaved = savedIds.includes(opportunityId);
 
       if (currentlySaved) {
-        const { error: deleteError } = await supabase
+        const { error: deleteError } = await supabaseClient
           .from('saved_opportunities')
           .delete()
           .eq('user_id', user.id)
@@ -93,7 +127,7 @@ export function SavedIdsProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      const { error: insertError } = await supabase.from('saved_opportunities').insert({
+      const { error: insertError } = await supabaseClient.from('saved_opportunities').insert({
         user_id: user.id,
         opportunity_id: opportunityId,
       });
