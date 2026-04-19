@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
-import { getOpportunityById } from '@/lib/data';
+import { connectDB } from '@/lib/mongodb';
+import Opportunity from '@/models/Opportunity';
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -8,7 +9,8 @@ type RouteContext = {
 
 export async function GET(_: Request, { params }: RouteContext) {
   const { id } = await params;
-  const opportunity = getOpportunityById(id);
+  await connectDB();
+  const opportunity = await Opportunity.findOne({ id }).lean();
 
   if (!opportunity) {
     return NextResponse.json({ error: 'Opportunity not found' }, { status: 404 });
