@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Trophy, Briefcase, Gift, Zap, Users, Star, SearchX, Bookmark, Clock3 } from 'lucide-react';
 
 import Navbar from '@/components/Navbar';
@@ -10,7 +10,8 @@ import OpportunityCard from '@/components/OpportunityCard';
 import SectionHeader from '@/components/SectionHeader';
 import { useSavedIds } from '@/hooks/use-saved-ids';
 
-import { hackathons, internships, studentOffers, type Opportunity } from '@/lib/data';
+import type { Opportunity } from '@/lib/data';
+import { supabase } from '@/lib/supabase';
 
 const statsData = [
   { label: 'Active Hackathons', value: '50+', icon: Trophy, color: 'text-blue-500' },
@@ -49,6 +50,8 @@ function filterBySavedIds(items: Opportunity[], savedIds: string[], enabled: boo
 export default function Home() {
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [search, setSearch] = useState('');
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState<Filters>({
     beginnerFriendly: false,
     remote: false,
@@ -63,17 +66,53 @@ export default function Home() {
     document.documentElement.classList.toggle('dark', next === 'dark');
   };
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchOpportunities = async () => {
+      const { data, error } = await supabase.from('opportunities').select('*');
+
+      if (!cancelled) {
+        if (error || !data) {
+          setOpportunities([]);
+        } else {
+          setOpportunities(data as Opportunity[]);
+        }
+        setIsLoading(false);
+      }
+    };
+
+    fetchOpportunities();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const hackathons = useMemo(
+    () => opportunities.filter((o) => o.type === 'hackathon'),
+    [opportunities]
+  );
+  const internships = useMemo(
+    () => opportunities.filter((o) => o.type === 'internship'),
+    [opportunities]
+  );
+  const studentOffers = useMemo(
+    () => opportunities.filter((o) => o.type === 'offer'),
+    [opportunities]
+  );
+
   const filteredHackathons = useMemo(
     () => filterBySavedIds(applyFilters(hackathons, search, filters), savedIds, showSavedOnly),
-    [search, filters, savedIds, showSavedOnly]
+    [hackathons, search, filters, savedIds, showSavedOnly]
   );
   const filteredInternships = useMemo(
     () => filterBySavedIds(applyFilters(internships, search, filters), savedIds, showSavedOnly),
-    [search, filters, savedIds, showSavedOnly]
+    [internships, search, filters, savedIds, showSavedOnly]
   );
   const filteredOffers = useMemo(
     () => filterBySavedIds(applyFilters(studentOffers, search, filters), savedIds, showSavedOnly),
-    [search, filters, savedIds, showSavedOnly]
+    [studentOffers, search, filters, savedIds, showSavedOnly]
   );
   const endingSoonItems = useMemo(
     () =>
@@ -239,7 +278,9 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-16">
-        {noSavedBookmarks ? (
+        {isLoading ? (
+          <p className="text-sm text-center text-gray-500 dark:text-gray-400">Loading...</p>
+        ) : noSavedBookmarks ? (
           <SavedBookmarksEmptyState onExit={() => setShowSavedOnly(false)} />
         ) : noMatches ? (
           <NoResultsEmptyState onClear={clearSearchAndFilters} searchQuery={search.trim()} />

@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Moon, Sun, GraduationCap, Menu, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface NavbarProps {
   theme: 'light' | 'dark';
@@ -11,6 +13,9 @@ interface NavbarProps {
 export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [logoutPending, setLogoutPending] = useState(false);
+  const router = useRouter();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     const handler = () => setIsScrolled(window.scrollY > 10);
@@ -23,6 +28,13 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
     { label: 'Internships', href: '#internships' },
     { label: 'Student Offers', href: '#offers' },
   ];
+
+  const handleLogout = async () => {
+    setLogoutPending(true);
+    await logout();
+    setLogoutPending(false);
+    router.replace('/login');
+  };
 
   return (
     <nav
@@ -56,6 +68,15 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
           </div>
 
           <div className="flex items-center gap-2">
+            {user && (
+              <button
+                onClick={handleLogout}
+                disabled={logoutPending}
+                className="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-all disabled:opacity-60"
+              >
+                {logoutPending ? 'Logging out...' : 'Logout'}
+              </button>
+            )}
             <button
               onClick={onThemeToggle}
               className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
@@ -87,6 +108,15 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
               {link.label}
             </a>
           ))}
+          {user && (
+            <button
+              onClick={handleLogout}
+              disabled={logoutPending}
+              className="w-full text-left block px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-all disabled:opacity-60"
+            >
+              {logoutPending ? 'Logging out...' : 'Logout'}
+            </button>
+          )}
         </div>
       )}
     </nav>

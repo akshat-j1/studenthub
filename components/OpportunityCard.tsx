@@ -79,7 +79,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
         onClick={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          toggleSaved(opportunity.id);
+          void toggleSaved(opportunity.id);
         }}
         className="absolute top-3 right-3 z-20 rounded-full p-2 border border-gray-200/90 dark:border-gray-600 bg-white/95 dark:bg-gray-800/95 shadow-sm hover:bg-amber-50/90 dark:hover:bg-gray-700 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/60 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
       >
