@@ -59,10 +59,11 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Login</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Sign in to continue to StudentHub.</p>
+    <main className="min-h-screen bg-[#09090b] flex items-center justify-center px-4 relative overflow-hidden">
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none -z-10" />
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#111318] p-8 shadow-[0_0_40px_rgba(0,0,0,0.5)] card-glow relative z-10">
+        <h1 className="text-3xl font-syne font-bold text-white mb-2">Login</h1>
+        <p className="text-sm font-dm-sans text-zinc-400 mb-8">Sign in to continue to StudentHub.</p>
 
         <form onSubmit={onSubmit} className="space-y-4">
           <input
@@ -71,7 +72,7 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Email"
             required
-            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all font-dm-sans"
           />
           <input
             type="password"
@@ -79,21 +80,21 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
             required
-            className="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2.5 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500/40"
+            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/40 transition-all font-dm-sans"
           />
-          {error && <p className="text-sm text-red-500">{error}</p>}
+          {error && <p className="text-sm text-red-400">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
+            className="w-full rounded-xl bg-indigo-500 px-4 py-3 text-sm font-semibold text-white disabled:opacity-60 shadow-[0_0_15px_rgba(99,102,241,0.2)] hover:bg-indigo-400 transition-colors mt-2"
           >
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
-        <div className="mt-4 space-y-2">
+        <div className="mt-6 space-y-3">
           <Link
             href="/"
-            className="block w-full rounded-xl border border-gray-200 dark:border-gray-700 px-4 py-2.5 text-center text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            className="block w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-center text-sm font-semibold text-zinc-300 hover:bg-white/10 hover:text-white transition-colors"
           >
             Continue as Guest
           </Link>
@@ -101,15 +102,15 @@ export default function LoginPage() {
             type="button"
             onClick={resetAuthState}
             disabled={resetting}
-            className="block w-full rounded-xl border border-amber-300 dark:border-amber-700 px-4 py-2.5 text-sm font-semibold text-amber-700 dark:text-amber-300 disabled:opacity-60"
+            className="block w-full rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3 text-sm font-semibold text-amber-500/80 hover:bg-amber-500/10 hover:text-amber-400 transition-colors disabled:opacity-60"
           >
             {resetting ? 'Resetting...' : 'Reset Auth State'}
           </button>
         </div>
 
-        <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
+        <p className="mt-8 text-center text-sm font-dm-sans text-zinc-400">
           No account?{' '}
-          <Link href="/signup" className="text-blue-500 font-medium hover:underline">
+          <Link href="/signup" className="text-indigo-400 font-medium hover:text-indigo-300 hover:underline">
             Sign up
           </Link>
         </p>

@@ -4,7 +4,8 @@ export type Opportunity = {
     description: string;
     deadline: string;
     tags: string[];
-    type: 'hackathon' | 'internship' | 'offer';
+    type: 'hackathon' | 'internship' | 'offer' | 'student_offer';
+    category?: string;
     company: string;
     location: string;
     isBeginnerFriendly: boolean;

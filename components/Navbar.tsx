@@ -3,23 +3,24 @@
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { Moon, Sun, GraduationCap, Menu, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from 'next-themes';
+import { motion, AnimatePresence } from 'framer-motion';
 
-interface NavbarProps {
-  theme: 'light' | 'dark';
-  onThemeToggle: () => void;
-}
-
-export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
+export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logoutPending, setLogoutPending] = useState(false);
   const [guestId, setGuestId] = useState('');
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { setTheme, resolvedTheme } = useTheme();
 
   useEffect(() => {
+    setMounted(true);
     const handler = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handler);
     return () => window.removeEventListener('scroll', handler);
@@ -41,9 +42,9 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
   }, []);
 
   const navLinks = [
-    { label: 'Hackathons', href: '#hackathons' },
-    { label: 'Internships', href: '#internships' },
-    { label: 'Student Offers', href: '#offers' },
+    { label: 'Hackathons', href: '/hackathons' },
+    { label: 'Internships', href: '/internships' },
+    { label: 'Student Offers', href: '/offers' },
   ];
 
   const handleLogout = async () => {
@@ -57,74 +58,96 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
     <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? 'bg-white/90 dark:bg-gray-900/90 backdrop-blur-md shadow-sm border-b border-gray-200/60 dark:border-gray-700/60'
+          ? 'bg-[#09090b]/60 backdrop-blur-md border-b border-white/5 shadow-sm'
           : 'bg-transparent'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <a href="#" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-sm group-hover:shadow-blue-200 dark:group-hover:shadow-blue-900 transition-shadow">
-              <GraduationCap className="w-4.5 h-4.5 text-white" size={18} />
-            </div>
-            <span className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">
-              Student<span className="text-blue-500">Hub</span>
-            </span>
-          </a>
+          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}>
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shadow-sm">
+                <GraduationCap className="w-4.5 h-4.5 text-white" size={18} />
+              </div>
+              <span className="text-lg font-bold font-syne text-[#f4f4f5] tracking-tight">
+                Student<span className="text-indigo-500">Hub</span>
+              </span>
+            </Link>
+          </motion.div>
 
-          <div className="hidden md:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-all duration-150"
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
+          <motion.ul
+            initial="hidden"
+            animate="visible"
+            variants={{
+              visible: { transition: { staggerChildren: 0.07 } },
+            }}
+            className="hidden md:flex items-center gap-6"
+          >
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <motion.li key={link.href} variants={{ hidden: { opacity: 0, y: -10 }, visible: { opacity: 1, y: 0 } }}>
+                  <Link href={link.href} className="relative group block">
+                    <motion.span
+                      whileHover={{ y: -1 }}
+                      className={`block text-sm font-medium transition-colors ${
+                        isActive ? 'text-indigo-400' : 'text-zinc-400 hover:text-indigo-300'
+                      }`}
+                    >
+                      {link.label}
+                    </motion.span>
+                    <span
+                      className={`absolute -bottom-1 left-0 h-0.5 bg-indigo-500 transition-all duration-300 ${
+                        isActive ? 'w-full' : 'w-0 group-hover:w-full'
+                      }`}
+                    />
+                  </Link>
+                </motion.li>
+              );
+            })}
+          </motion.ul>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {user ? (
               <button
                 onClick={handleLogout}
                 disabled={logoutPending}
-                className="px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-all disabled:opacity-60"
+                className="px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-all disabled:opacity-60"
               >
                 {logoutPending ? 'Logging out...' : 'Logout'}
               </button>
             ) : (
               <>
                 {guestId && (
-                  <span className="hidden sm:inline-flex rounded-full border border-amber-300/70 dark:border-amber-700/70 bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300">
+                  <span className="hidden sm:inline-flex rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] font-semibold text-amber-500">
                     {guestId}
                   </span>
                 )}
                 <Link
                   href="/login"
-                  className="hidden sm:inline-flex px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-all"
+                  className="hidden sm:inline-flex px-3 py-1.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
                 >
                   Login
                 </Link>
                 <Link
                   href="/signup"
-                  className="hidden sm:inline-flex rounded-lg bg-gradient-to-r from-blue-500 to-cyan-500 px-3 py-1.5 text-xs sm:text-sm font-semibold text-white"
+                  className="hidden sm:inline-flex rounded-lg bg-indigo-500 px-4 py-1.5 text-sm font-semibold text-white hover:bg-indigo-400 transition-colors shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:shadow-[0_0_20px_rgba(99,102,241,0.5)]"
                 >
                   Sign up
                 </Link>
               </>
             )}
             <button
-              onClick={onThemeToggle}
-              className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+              className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
               aria-label="Toggle theme"
             >
-              {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+              {mounted && resolvedTheme === 'dark' ? <Sun size={18} /> : <Moon size={18} className={!mounted ? "opacity-0" : ""} />}
             </button>
 
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all"
+              className="md:hidden p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-all"
               aria-label="Toggle menu"
             >
               {mobileOpen ? <X size={18} /> : <Menu size={18} />}
@@ -133,49 +156,65 @@ export default function Navbar({ theme, onThemeToggle }: NavbarProps) {
         </div>
       </div>
 
-      {mobileOpen && (
-        <div className="md:hidden bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 px-4 py-3 space-y-1">
-          {navLinks.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              onClick={() => setMobileOpen(false)}
-              className="block px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-all"
-            >
-              {link.label}
-            </a>
-          ))}
-          {user ? (
-            <button
-              onClick={handleLogout}
-              disabled={logoutPending}
-              className="w-full text-left block px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-all disabled:opacity-60"
-            >
-              {logoutPending ? 'Logging out...' : 'Logout'}
-            </button>
-          ) : (
-            <>
-              {guestId && (
-                <p className="px-4 pt-2 text-xs font-semibold text-amber-700 dark:text-amber-300">Guest: {guestId}</p>
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="md:hidden bg-[#111318] border-t border-white/5 overflow-hidden"
+          >
+            <div className="px-4 py-3 space-y-2">
+              {navLinks.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`block px-4 py-3 text-sm font-medium rounded-xl transition-all ${
+                      isActive
+                        ? 'text-indigo-400 bg-indigo-500/10'
+                        : 'text-zinc-400 hover:text-indigo-300 hover:bg-white/5'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+              {user ? (
+                <button
+                  onClick={handleLogout}
+                  disabled={logoutPending}
+                  className="w-full text-left block px-4 py-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all disabled:opacity-60"
+                >
+                  {logoutPending ? 'Logging out...' : 'Logout'}
+                </button>
+              ) : (
+                <>
+                  {guestId && (
+                    <p className="px-4 pt-2 text-xs font-semibold text-amber-500">Guest: {guestId}</p>
+                  )}
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-4 py-3 text-sm font-medium text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-all"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/signup"
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-4 py-3 text-sm font-semibold text-white bg-indigo-500 rounded-xl transition-all text-center mt-2"
+                  >
+                    Sign up
+                  </Link>
+                </>
               )}
-              <Link
-                href="/login"
-                onClick={() => setMobileOpen(false)}
-                className="block px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-all"
-              >
-                Login
-              </Link>
-              <Link
-                href="/signup"
-                onClick={() => setMobileOpen(false)}
-                className="block px-4 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg transition-all"
-              >
-                Sign up
-              </Link>
-            </>
-          )}
-        </div>
-      )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }

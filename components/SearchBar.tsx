@@ -1,6 +1,7 @@
 'use client';
 
 import { Search, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface SearchBarProps {
   value: string;
@@ -9,27 +10,34 @@ interface SearchBarProps {
 
 export default function SearchBar({ value, onChange }: SearchBarProps) {
   return (
-    <div className="relative w-full max-w-2xl mx-auto">
+    <div className="relative w-full max-w-2xl mx-auto flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus-within:border-indigo-500/50 focus-within:ring-1 focus-within:ring-indigo-500/20 transition-all duration-300 shadow-sm">
       <Search
         size={18}
-        className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none"
+        className="text-indigo-500/70 flex-shrink-0"
       />
       <input
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search hackathons, internships, offers..."
-        className="w-full pl-11 pr-10 py-3.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-400 dark:focus:border-blue-500 transition-all"
+        className="w-full bg-transparent text-white placeholder:text-zinc-500 focus:outline-none text-sm"
       />
-      {value && (
-        <button
-          onClick={() => onChange('')}
-          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
-          aria-label="Clear search"
-        >
-          <X size={14} />
-        </button>
-      )}
+      <AnimatePresence>
+        {value && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => onChange('')}
+            className="p-1 rounded-md text-zinc-500 hover:text-white hover:bg-white/10 transition-colors absolute right-3"
+            aria-label="Clear search"
+          >
+            <X size={14} />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

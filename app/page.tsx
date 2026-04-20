@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { Trophy, Briefcase, Gift, Zap, Users, Star, SearchX, Bookmark, Clock3 } from 'lucide-react';
+import { Trophy, Briefcase, Gift, Zap, Users, Star, SearchX, Bookmark, Clock3, Loader2, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import Navbar from '@/components/Navbar';
 import SearchBar from '@/components/SearchBar';
@@ -20,8 +22,6 @@ const statsData = [
   { label: 'Student Offers', value: '100+', icon: Gift, color: 'text-emerald-500' },
   { label: 'Students Helped', value: '10K+', icon: Users, color: 'text-amber-500' },
 ];
-const INITIAL_VISIBLE_COUNT = 6;
-const LOAD_MORE_STEP = 6;
 
 function applyFilters(items: Opportunity[], search: string, filters: Filters): Opportunity[] {
   return items.filter((item) => {
@@ -31,12 +31,13 @@ function applyFilters(items: Opportunity[], search: string, filters: Filters): O
         item.title.toLowerCase().includes(q) ||
         item.description.toLowerCase().includes(q) ||
         item.company.toLowerCase().includes(q) ||
-        item.tags.some((t) => t.toLowerCase().includes(q));
+        (Array.isArray(item.tags) && item.tags.some((t) => t.toLowerCase().includes(q)));
       if (!match) return false;
     }
     if (filters.beginnerFriendly && !item.isBeginnerFriendly) return false;
     if (filters.remote && !item.isRemote) return false;
     if (filters.paid && !item.isPaid) return false;
+    if (filters.free && item.isPaid) return false;
     return true;
   });
 }
@@ -49,7 +50,6 @@ function filterBySavedIds(items: Opportunity[], savedIds: string[], enabled: boo
 }
 
 export default function Home() {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [search, setSearch] = useState('');
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [isLoading, setIsLoading] = useState(Boolean(supabase));
@@ -57,18 +57,13 @@ export default function Home() {
     beginnerFriendly: false,
     remote: false,
     paid: false,
+    free: false,
   });
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [aiResult, setAiResult] = useState('');
   const [aiError, setAiError] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const { savedIds } = useSavedIds();
-
-  const toggleTheme = () => {
-    const next = theme === 'light' ? 'dark' : 'light';
-    setTheme(next);
-    document.documentElement.classList.toggle('dark', next === 'dark');
-  };
 
   useEffect(() => {
     if (!supabase) return;
@@ -81,7 +76,6 @@ export default function Home() {
 
       if (!cancelled) {
         if (error || !data || data.length === 0) {
-          // Fall back to bundled demo content when DB read is blocked or empty.
           setOpportunities(localOpportunities);
         } else {
           setOpportunities(data as Opportunity[]);
@@ -97,18 +91,9 @@ export default function Home() {
     };
   }, []);
 
-  const hackathons = useMemo(
-    () => opportunities.filter((o) => o.type === 'hackathon'),
-    [opportunities]
-  );
-  const internships = useMemo(
-    () => opportunities.filter((o) => o.type === 'internship'),
-    [opportunities]
-  );
-  const studentOffers = useMemo(
-    () => opportunities.filter((o) => o.type === 'offer'),
-    [opportunities]
-  );
+  const hackathons = useMemo(() => opportunities.filter((o) => o.type === 'hackathon'), [opportunities]);
+  const internships = useMemo(() => opportunities.filter((o) => o.type === 'internship'), [opportunities]);
+  const studentOffers = useMemo(() => opportunities.filter((o) => o.type === 'student_offer'), [opportunities]);
 
   const filteredHackathons = useMemo(
     () => filterBySavedIds(applyFilters(hackathons, search, filters), savedIds, showSavedOnly),
@@ -126,7 +111,7 @@ export default function Home() {
     () =>
       [...filteredHackathons, ...filteredInternships, ...filteredOffers]
         .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
-        .slice(0, 6),
+        .slice(0, 5),
     [filteredHackathons, filteredInternships, filteredOffers]
   );
   const currentOpportunityList = useMemo(
@@ -135,23 +120,15 @@ export default function Home() {
   );
 
   const totalResults = filteredHackathons.length + filteredInternships.length + filteredOffers.length;
-
-  const hasActiveQuery =
-    search.trim().length > 0 || Object.values(filters).some(Boolean) || showSavedOnly;
+  const hasActiveQuery = search.trim().length > 0 || Object.values(filters).some(Boolean) || showSavedOnly;
   const noSavedBookmarks = showSavedOnly && savedIds.length === 0;
   const noMatches = totalResults === 0 && hasActiveQuery && !noSavedBookmarks;
 
   const clearSearchAndFilters = () => {
     setSearch('');
-    setFilters({
-      beginnerFriendly: false,
-      remote: false,
-      paid: false,
-    });
+    setFilters({ beginnerFriendly: false, remote: false, paid: false, free: false });
     setShowSavedOnly(false);
   };
-
-  const paginationResetKey = `${search}|${filters.beginnerFriendly}|${filters.remote}|${filters.paid}|${showSavedOnly}|${savedIds.join(',')}`;
 
   const getAiRecommendations = async () => {
     setAiError('');
@@ -180,115 +157,180 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 transition-colors duration-300">
-      <Navbar theme={theme} onThemeToggle={toggleTheme} />
+    <div className="min-h-screen bg-[#09090b] transition-colors duration-300">
+      <Navbar />
 
       {/* Hero */}
-      <section className="relative pt-24 pb-16 overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          <div className="absolute -top-40 -right-40 w-96 h-96 bg-blue-100 dark:bg-blue-950/40 rounded-full blur-3xl opacity-60" />
-          <div className="absolute -bottom-20 -left-20 w-72 h-72 bg-cyan-100 dark:bg-cyan-950/40 rounded-full blur-3xl opacity-50" />
+      <motion.section 
+        initial={{ opacity: 0, y: 30 }} 
+        animate={{ opacity: 1, y: 0 }} 
+        transition={{ duration: 0.7, ease: 'easeOut' }}
+        className="relative pt-32 pb-12 overflow-hidden"
+      >
+        <div className="absolute inset-0 pointer-events-none overflow-hidden flex justify-center">
+          <div className="absolute top-0 w-[800px] h-[400px] bg-indigo-500/10 rounded-full blur-[120px]" />
         </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-800/60 rounded-full text-xs font-medium text-blue-600 dark:text-blue-400 mb-6">
-            <Zap size={12} />
+        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-xs font-medium text-indigo-400 mb-8"
+          >
+            <Zap size={12} className="text-amber-400" />
             The #1 platform for student opportunities
-          </div>
+          </motion.div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-5 leading-tight">
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-syne font-bold tracking-tight mb-6 leading-tight">
             Discover Your Next
-            <span className="block bg-gradient-to-r from-blue-500 via-cyan-500 to-teal-500 bg-clip-text text-transparent">
+            <span className="block bg-gradient-to-r from-white via-indigo-200 to-white bg-clip-text text-transparent pb-2">
               Big Opportunity
             </span>
           </h1>
 
-          <p className="text-base sm:text-lg text-gray-500 dark:text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+          <p className="text-lg sm:text-xl font-dm-sans text-zinc-400 max-w-2xl mx-auto mb-12 leading-relaxed">
             Hackathons, internships, and exclusive student offers — all in one place.
             Find opportunities that match your skills and goals.
           </p>
 
-          <div className="flex flex-col items-center gap-4 max-w-2xl mx-auto w-full">
-            <SearchBar value={search} onChange={setSearch} />
-            <FilterBar filters={filters} onChange={setFilters} />
-            <button
-              type="button"
-              aria-pressed={showSavedOnly}
-              onClick={() => setShowSavedOnly((v) => !v)}
-              className={[
-                'inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold transition-all duration-200',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950',
-                'active:scale-[0.98]',
-                showSavedOnly
-                  ? 'border-amber-500/70 bg-amber-500/15 text-amber-900 dark:text-amber-100 shadow-sm ring-2 ring-amber-500/25 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-950'
-                  : 'border-gray-200/90 dark:border-gray-600 bg-white/90 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500',
-              ].join(' ')}
-            >
-              <Bookmark
-                className={`h-3.5 w-3.5 ${showSavedOnly ? 'fill-amber-400 text-amber-600 dark:fill-amber-400 dark:text-amber-300' : 'fill-transparent text-gray-500 dark:text-gray-400'}`}
-                strokeWidth={2}
-              />
-              Saved only
-            </button>
-          </div>
+          <motion.div 
+            variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }}
+            initial="hidden" animate="show"
+            className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 max-w-2xl mx-auto flex flex-col items-center gap-4"
+          >
+            <motion.div variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }} className="w-full">
+              <SearchBar value={search} onChange={setSearch} />
+            </motion.div>
+            <motion.div variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }} className="w-full">
+              <FilterBar filters={filters} onChange={setFilters} availableFilters={['beginnerFriendly', 'remote', 'paid', 'free']} />
+            </motion.div>
+            
+            <motion.div variants={{ hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } }} className="w-full pt-2 border-t border-white/5">
+              <button
+                type="button"
+                aria-pressed={showSavedOnly}
+                onClick={() => setShowSavedOnly((v) => !v)}
+                className={`inline-flex items-center justify-center w-full sm:w-auto mx-auto gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all duration-200 ${
+                  showSavedOnly
+                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                    : 'bg-white/5 text-zinc-400 border border-white/10 hover:bg-white/10 hover:text-white'
+                }`}
+              >
+                <Bookmark className={`h-4 w-4 ${showSavedOnly ? 'fill-amber-400 text-amber-400' : 'text-zinc-400'}`} strokeWidth={2} />
+                Saved only
+              </button>
+            </motion.div>
+          </motion.div>
 
           {hasActiveQuery && (
-            <p className="mt-5 text-sm text-gray-500 dark:text-gray-400">
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-6 text-sm text-zinc-400">
               {noMatches ? (
                 <>
-                  <span className="font-semibold text-gray-900 dark:text-white">0</span> results
-                  {search.trim() && (
-                    <> for <span className="font-semibold text-blue-500">&quot;{search}&quot;</span></>
-                  )}
+                  <span className="font-semibold text-white">0</span> results
+                  {search.trim() && <> for <span className="text-indigo-400">&quot;{search}&quot;</span></>}
                 </>
               ) : (
                 <>
-                  Showing <span className="font-semibold text-gray-900 dark:text-white">{totalResults}</span> results
-                  {search.trim() && (
-                    <> for <span className="font-semibold text-blue-500">&quot;{search}&quot;</span></>
-                  )}
+                  Showing <span className="font-semibold text-white">{totalResults}</span> results
+                  {search.trim() && <> for <span className="text-indigo-400">&quot;{search}&quot;</span></>}
                 </>
               )}
-            </p>
+            </motion.p>
           )}
         </div>
+      </motion.section>
+
+      {/* AI Recommendations */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 mt-8">
+        <motion.div 
+          whileInView={{ opacity: 1, scale: 1 }} 
+          initial={{ opacity: 0, scale: 0.97 }} 
+          viewport={{ once: true }}
+          className="bg-gradient-to-br from-indigo-950/40 to-[#09090b] border border-indigo-500/20 rounded-2xl p-6 sm:p-8 relative overflow-hidden card-glow"
+        >
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px] pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
+            <div className="max-w-xl">
+              <div className="flex items-center gap-3 mb-2">
+                <h2 className="text-xl sm:text-2xl font-syne font-bold text-white">AI Recommendations</h2>
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase tracking-wider border border-indigo-500/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+                  Powered by Gemini
+                </span>
+              </div>
+              <p className="text-sm font-dm-sans text-indigo-200/70">
+                Get personalized, intelligent recommendations based on your current filters and searches.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={getAiRecommendations}
+              disabled={aiLoading || currentOpportunityList.length === 0}
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-500 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-50 hover:bg-indigo-400 transition-colors shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+            >
+              {aiLoading ? <><Loader2 size={16} className="animate-spin" /> Analyzing...</> : <><Sparkles size={16} /> Get Insights</>}
+            </button>
+          </div>
+
+          <AnimatePresence mode="wait">
+            {aiError && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mt-6 rounded-xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-400">
+                {aiError}
+              </motion.div>
+            )}
+
+            {aiLoading && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="mt-6 space-y-3">
+                <div className="h-4 bg-indigo-500/10 rounded animate-pulse w-3/4" />
+                <div className="h-4 bg-indigo-500/10 rounded animate-pulse w-full" />
+                <div className="h-4 bg-indigo-500/10 rounded animate-pulse w-5/6" />
+              </motion.div>
+            )}
+
+            {!aiLoading && aiResult && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-6 rounded-xl border border-indigo-500/20 bg-[#111318]/50 backdrop-blur-sm px-6 py-5 text-sm leading-relaxed text-zinc-300 whitespace-pre-wrap font-dm-sans">
+                {aiResult}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </section>
 
       {/* Ending Soon */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-rose-200/80 dark:border-rose-800/70 bg-rose-50/80 dark:bg-rose-950/30 px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-rose-600 dark:text-rose-300">
-              <Clock3 size={12} />
-              Ending Soon
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-500 mb-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+              Urgent
             </div>
-            <h2 className="mt-3 text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
+            <h2 className="text-2xl sm:text-3xl font-syne font-bold text-white">
               Deadlines approaching fast
             </h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              The next opportunities closing soonest across all categories.
+            <p className="mt-2 text-sm font-dm-sans text-zinc-400">
+              The top 5 opportunities closing soonest across all categories.
             </p>
           </div>
-          <span className="hidden sm:inline-flex items-center rounded-full border border-gray-200 dark:border-gray-700 px-3 py-1 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800/70">
-            Top {endingSoonItems.length}
-          </span>
         </div>
 
         {endingSoonItems.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <motion.div variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.1 } } }} initial="hidden" whileInView="show" viewport={{ once: true, margin: "-100px" }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {endingSoonItems.map((item) => (
-              <div key={`ending-${item.id}`} className="relative">
-                <span className="pointer-events-none absolute left-3 top-3 z-20 rounded-full border border-rose-200 dark:border-rose-800/70 bg-rose-50/95 dark:bg-rose-950/80 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-rose-600 dark:text-rose-300">
-                  Ending Soon
-                </span>
+              <motion.div key={`ending-${item.id}`} variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }} className="relative">
+                <div className="absolute -top-3 -right-3 z-30">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-red-500/30 bg-[#09090b] text-[10px] font-bold uppercase tracking-wider text-red-400 shadow-xl">
+                    <Clock3 size={10} />
+                    Ending Soon
+                  </span>
+                </div>
                 <OpportunityCard opportunity={item} />
-              </div>
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         ) : (
-          <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800/60 px-6 py-10 text-center shadow-sm">
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              No upcoming deadlines match the current search and filters.
+          <div className="rounded-2xl border border-white/10 bg-[#111318] px-6 py-12 text-center">
+            <p className="text-sm font-medium text-zinc-400">
+              No upcoming deadlines match your current search and filters.
             </p>
           </div>
         )}
@@ -297,71 +339,29 @@ export default function Home() {
       {/* Stats */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {statsData.map(({ label, value, icon: Icon, color }) => (
-            <div
-              key={label}
-              className="bg-white dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700/60 rounded-2xl p-5 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className={`p-2.5 rounded-xl bg-gray-50 dark:bg-gray-700/60 ${color}`}>
-                <Icon size={20} />
-              </div>
-              <div>
-                <p className="text-xl font-bold text-gray-900 dark:text-white">{value}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{label}</p>
-              </div>
-            </div>
+          {statsData.map((stat, index) => (
+            <StatCard key={stat.label} {...stat} index={index} />
           ))}
-        </div>
-      </section>
-
-      {/* Main Content */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800/70 p-5 sm:p-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">AI Recommendations</h2>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Get top 5 recommendations from your current opportunity list.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={getAiRecommendations}
-              disabled={aiLoading || currentOpportunityList.length === 0}
-              className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 to-cyan-500 px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {aiLoading ? 'Generating...' : 'Get AI Recommendations'}
-            </button>
-          </div>
-
-          {aiError && (
-            <div className="mt-4 rounded-xl border border-red-200 dark:border-red-800/60 bg-red-50 dark:bg-red-950/20 px-4 py-3 text-sm text-red-700 dark:text-red-300">
-              {aiError}
-            </div>
-          )}
-
-          {aiResult && (
-            <div className="mt-4 rounded-xl border border-blue-200 dark:border-blue-800/60 bg-blue-50/60 dark:bg-blue-950/20 px-4 py-3 text-sm leading-relaxed text-gray-700 dark:text-gray-200 whitespace-pre-wrap">
-              {aiResult}
-            </div>
-          )}
         </div>
       </section>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-16">
         {supabaseConfigError ? (
-          <div className="rounded-2xl border border-red-200 dark:border-red-800/60 bg-red-50/80 dark:bg-red-950/20 px-6 py-5 text-sm text-red-700 dark:text-red-300">
+          <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-6 py-5 text-sm text-red-400">
             {supabaseConfigError}
           </div>
         ) : isLoading ? (
-          <p className="text-sm text-center text-gray-500 dark:text-gray-400">Loading...</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-48 rounded-2xl bg-white/5 animate-pulse" />
+            ))}
+          </div>
         ) : noSavedBookmarks ? (
           <SavedBookmarksEmptyState onExit={() => setShowSavedOnly(false)} />
         ) : noMatches ? (
           <NoResultsEmptyState onClear={clearSearchAndFilters} searchQuery={search.trim()} />
         ) : (
-          <PaginatedSections
-            key={paginationResetKey}
+          <PreviewSections
             filteredHackathons={filteredHackathons}
             filteredInternships={filteredInternships}
             filteredOffers={filteredOffers}
@@ -370,17 +370,17 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900/50">
+      <footer className="border-t border-white/10 bg-[#09090b]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
+            <div className="w-6 h-6 rounded-md bg-indigo-500 flex items-center justify-center">
               <Star size={12} className="text-white" />
             </div>
-            <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-              Student<span className="text-blue-500">Hub</span>
+            <span className="text-sm font-syne font-semibold text-white">
+              Student<span className="text-indigo-500">Hub</span>
             </span>
           </div>
-          <p className="text-xs text-gray-400 dark:text-gray-500">
+          <p className="text-xs font-dm-sans text-zinc-500">
             Empowering students to find their next big break. All data is for demonstration purposes.
           </p>
         </div>
@@ -389,84 +389,49 @@ export default function Home() {
   );
 }
 
-function EmptyState({ type }: { type: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
-        <Star size={22} className="text-gray-400 dark:text-gray-600" />
-      </div>
-      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No {type} found</p>
-      <p className="text-xs text-gray-400 dark:text-gray-500">Try adjusting your search or filters</p>
-    </div>
-  );
-}
+function StatCard({ label, value, icon: Icon, color, index }: any) {
+  const [count, setCount] = useState(0);
+  const target = parseInt(value.replace(/\D/g, '')) || 0;
+  const suffix = value.replace(/\d/g, '');
 
-function SavedBookmarksEmptyState({ onExit }: { onExit: () => void }) {
+  useEffect(() => {
+    let start = 0;
+    const duration = 2000;
+    const increment = target / (duration / 16);
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= target) {
+        setCount(target);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(start));
+      }
+    }, 16);
+    return () => clearInterval(timer);
+  }, [target]);
+
   return (
-    <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800/80 shadow-sm px-8 py-10 text-center">
-        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 dark:from-amber-950/50 dark:to-gray-800/80">
-          <Bookmark
-            className="h-8 w-8 fill-transparent stroke-amber-600/70 dark:stroke-amber-400/80"
-            strokeWidth={2}
-            aria-hidden
-          />
-        </div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">No saved opportunities yet</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
-          Use the bookmark icon on any card to save it here. Saved items stay on this device.
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay: index * 0.1 }}
+      className="bg-[#111318] border border-white/5 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 shadow-sm"
+    >
+      <div className={`p-3 rounded-full bg-white/5 ${color}`}>
+        <Icon size={24} />
+      </div>
+      <div className="text-center">
+        <p className="text-3xl font-syne font-bold text-white">
+          {count}{suffix}
         </p>
-        <button
-          type="button"
-          onClick={onExit}
-          className="inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700/80 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
-        >
-          Browse all opportunities
-        </button>
+        <p className="text-sm font-dm-sans text-zinc-400 mt-1">{label}</p>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
-function NoResultsEmptyState({
-  onClear,
-  searchQuery,
-}: {
-  onClear: () => void;
-  searchQuery: string;
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-gray-200 dark:border-gray-700/60 bg-white dark:bg-gray-800/80 shadow-sm px-8 py-10 text-center">
-        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-700 dark:to-gray-800/80">
-          <SearchX className="h-8 w-8 text-gray-400 dark:text-gray-500" aria-hidden />
-        </div>
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-          No opportunities match your filters
-        </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-6">
-          {searchQuery ? (
-            <>
-              Nothing matched &quot;{searchQuery}&quot; with your current filters. Try different keywords or relax
-              your filters.
-            </>
-          ) : (
-            <>Nothing matched your current filters. Try turning off a filter to see more opportunities.</>
-          )}
-        </p>
-        <button
-          type="button"
-          onClick={onClear}
-          className="inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-500 to-cyan-500 hover:opacity-95 shadow-sm transition-opacity focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-900"
-        >
-          Clear search & filters
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function PaginatedSections({
+function PreviewSections({
   filteredHackathons,
   filteredInternships,
   filteredOffers,
@@ -475,88 +440,110 @@ function PaginatedSections({
   filteredInternships: Opportunity[];
   filteredOffers: Opportunity[];
 }) {
-  const [visibleHackathons, setVisibleHackathons] = useState(INITIAL_VISIBLE_COUNT);
-  const [visibleInternships, setVisibleInternships] = useState(INITIAL_VISIBLE_COUNT);
-  const [visibleOffers, setVisibleOffers] = useState(INITIAL_VISIBLE_COUNT);
-
   return (
     <>
-      {/* Hackathons */}
+      {/* Hackathons Preview */}
       <section>
-        <SectionHeader
-          id="hackathons"
-          title="Hackathons"
-          subtitle="Compete, build, and win prizes"
-          icon={Trophy}
-          count={filteredHackathons.length}
-          gradient="from-blue-500 to-cyan-500"
-        />
+        <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+          <SectionHeader
+            id="hackathons"
+            title="Hackathons"
+            subtitle="Compete, build, and win prizes"
+            icon={Trophy}
+            count={filteredHackathons.length}
+            gradient="from-blue-500 to-cyan-500"
+            action={
+              <Link
+                href="/post-hackathon"
+                className="inline-flex items-center justify-center rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-400 transition-colors shadow-[0_0_15px_rgba(99,102,241,0.2)]"
+              >
+                Post Hackathon
+              </Link>
+            }
+          />
+        </motion.div>
         {filteredHackathons.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredHackathons.slice(0, visibleHackathons).map((item) => (
-                <OpportunityCard key={item.id} opportunity={item} />
+            <motion.div variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.08 } } }} initial="hidden" whileInView="show" viewport={{ once: true }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredHackathons.slice(0, 3).map((item) => (
+                <motion.div key={item.id} variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}>
+                  <OpportunityCard opportunity={item} />
+                </motion.div>
               ))}
+            </motion.div>
+            <div className="mt-8 flex justify-center">
+              <Link href="/hackathons" className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-6 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-white/10 hover:text-white transition-colors">
+                View All Hackathons
+              </Link>
             </div>
-            {filteredHackathons.length > visibleHackathons && (
-              <LoadMoreButton onClick={() => setVisibleHackathons((count) => count + LOAD_MORE_STEP)} />
-            )}
           </>
         ) : (
           <EmptyState type="hackathons" />
         )}
       </section>
 
-      <div className="border-t border-gray-200 dark:border-gray-800" />
+      <div className="border-t border-white/5" />
 
-      {/* Internships */}
+      {/* Internships Preview */}
       <section>
-        <SectionHeader
-          id="internships"
-          title="Internships"
-          subtitle="Launch your career with top companies"
-          icon={Briefcase}
-          count={filteredInternships.length}
-          gradient="from-violet-500 to-blue-500"
-        />
+        <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+          <SectionHeader
+            id="internships"
+            title="Internships"
+            subtitle="Launch your career with top companies"
+            icon={Briefcase}
+            count={filteredInternships.length}
+            gradient="from-violet-500 to-blue-500"
+          />
+        </motion.div>
         {filteredInternships.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredInternships.slice(0, visibleInternships).map((item) => (
-                <OpportunityCard key={item.id} opportunity={item} />
+            <motion.div variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.08 } } }} initial="hidden" whileInView="show" viewport={{ once: true }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredInternships.slice(0, 3).map((item) => (
+                <motion.div key={item.id} variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}>
+                  <OpportunityCard opportunity={item} />
+                </motion.div>
               ))}
+            </motion.div>
+            <div className="mt-8 flex justify-center">
+              <Link href="/internships" className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-6 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-white/10 hover:text-white transition-colors">
+                View All Internships
+              </Link>
             </div>
-            {filteredInternships.length > visibleInternships && (
-              <LoadMoreButton onClick={() => setVisibleInternships((count) => count + LOAD_MORE_STEP)} />
-            )}
           </>
         ) : (
           <EmptyState type="internships" />
         )}
       </section>
 
-      <div className="border-t border-gray-200 dark:border-gray-800" />
+      <div className="border-t border-white/5" />
 
-      {/* Student Offers */}
+      {/* Student Offers Preview */}
       <section>
-        <SectionHeader
-          id="offers"
-          title="Student Offers"
-          subtitle="Free tools and perks for students"
-          icon={Gift}
-          count={filteredOffers.length}
-          gradient="from-emerald-500 to-teal-500"
-        />
+        <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }}>
+          <SectionHeader
+            id="offers"
+            title="Student Offers"
+            subtitle="Free tools and perks for students"
+            icon={Gift}
+            count={filteredOffers.length}
+            gradient="from-emerald-500 to-teal-500"
+          />
+        </motion.div>
         {filteredOffers.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filteredOffers.slice(0, visibleOffers).map((item) => (
-                <OpportunityCard key={item.id} opportunity={item} />
+            <motion.div variants={{ hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.08 } } }} initial="hidden" whileInView="show" viewport={{ once: true }} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredOffers.slice(0, 3).map((item) => (
+                <motion.div key={item.id} variants={{ hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0 } }}>
+                  <OpportunityCard opportunity={item} />
+                </motion.div>
               ))}
+            </motion.div>
+            <div className="mt-8 flex justify-center">
+              <Link href="/offers" className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-6 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-white/10 hover:text-white transition-colors">
+                View All Student Offers
+              </Link>
             </div>
-            {filteredOffers.length > visibleOffers && (
-              <LoadMoreButton onClick={() => setVisibleOffers((count) => count + LOAD_MORE_STEP)} />
-            )}
           </>
         ) : (
           <EmptyState type="student offers" />
@@ -566,16 +553,64 @@ function PaginatedSections({
   );
 }
 
-function LoadMoreButton({ onClick }: { onClick: () => void }) {
+function EmptyState({ type }: { type: string }) {
   return (
-    <div className="mt-6 flex justify-center">
-      <button
-        type="button"
-        onClick={onClick}
-        className="inline-flex items-center justify-center rounded-full border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/70 px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-100 dark:hover:bg-gray-700/80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950"
-      >
-        Load more
-      </button>
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
+        <Star size={22} className="text-zinc-600" />
+      </div>
+      <p className="text-sm font-medium text-zinc-300 mb-1">No {type} found</p>
+      <p className="text-xs text-zinc-500">Try adjusting your search or filters</p>
+    </div>
+  );
+}
+
+function SavedBookmarksEmptyState({ onExit }: { onExit: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4">
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#111318] shadow-sm px-8 py-10 text-center">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10">
+          <Bookmark className="h-8 w-8 text-amber-500" strokeWidth={2} aria-hidden />
+        </div>
+        <h2 className="text-lg font-syne font-semibold text-white mb-2">No saved opportunities yet</h2>
+        <p className="text-sm font-dm-sans text-zinc-400 leading-relaxed mb-6">
+          Use the bookmark icon on any card to save it here. Saved items stay on this device.
+        </p>
+        <button
+          type="button"
+          onClick={onExit}
+          className="inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-zinc-300 bg-white/5 hover:bg-white/10 hover:text-white transition-colors"
+        >
+          Browse all opportunities
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NoResultsEmptyState({ onClear, searchQuery }: { onClear: () => void; searchQuery: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4">
+      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#111318] shadow-sm px-8 py-10 text-center">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5">
+          <SearchX className="h-8 w-8 text-zinc-500" aria-hidden />
+        </div>
+        <h2 className="text-lg font-syne font-semibold text-white mb-2">No opportunities match your filters</h2>
+        <p className="text-sm font-dm-sans text-zinc-400 leading-relaxed mb-6">
+          {searchQuery ? (
+            <>Nothing matched &quot;{searchQuery}&quot; with your current filters. Try different keywords or relax your filters.</>
+          ) : (
+            <>Nothing matched your current filters. Try turning off a filter to see more opportunities.</>
+          )}
+        </p>
+        <button
+          type="button"
+          onClick={onClear}
+          className="inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-white bg-indigo-500 hover:bg-indigo-400 shadow-[0_0_15px_rgba(99,102,241,0.2)] transition-colors"
+        >
+          Clear search & filters
+        </button>
+      </div>
     </div>
   );
 }

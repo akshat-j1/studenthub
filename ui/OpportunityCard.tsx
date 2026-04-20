@@ -23,6 +23,11 @@ const typeConfig = {
     gradient: 'from-emerald-500 to-teal-500',
     tagBg: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-300 border-emerald-100 dark:border-emerald-800/60',
   },
+  student_offer: {
+    icon: Gift,
+    gradient: 'from-emerald-500 to-teal-500',
+    tagBg: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-300 border-emerald-100 dark:border-emerald-800/60',
+  },
 };
 
 function formatDeadline(dateStr: string): string {
@@ -83,7 +88,7 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
         </p>
 
         <div className="flex flex-wrap gap-1.5">
-          {opportunity.tags.map((tag) => (
+          {Array.isArray(opportunity.tags) && opportunity.tags.map((tag) => (
             <span
               key={tag}
               className={`px-2 py-0.5 text-xs font-medium rounded-md border ${config.tagBg}`}

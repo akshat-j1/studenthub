@@ -1,4 +1,4 @@
-import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextResponse } from 'next/server';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -20,22 +20,22 @@ type OpportunityInput = {
 };
 
 export async function POST(request: Request) {
-  let apiKey = process.env.OPENAI_API_KEY;
+  let apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     // Fallback for dev sessions where env vars were not picked up after start.
     const envPath = join(process.cwd(), '.env.local');
     if (existsSync(envPath)) {
       const line = readFileSync(envPath, 'utf8')
         .split('\n')
-        .find((item) => item.startsWith('OPENAI_API_KEY='));
+        .find((item) => item.startsWith('GEMINI_API_KEY='));
       if (line) {
-        apiKey = line.slice('OPENAI_API_KEY='.length).trim();
+        apiKey = line.slice('GEMINI_API_KEY='.length).trim();
       }
     }
   }
 
   if (!apiKey) {
-    return NextResponse.json({ error: 'Missing OPENAI_API_KEY' }, { status: 500 });
+    return NextResponse.json({ error: 'Missing GEMINI_API_KEY' }, { status: 500 });
   }
 
   try {
@@ -62,37 +62,23 @@ export async function POST(request: Request) {
       description: item.description,
     }));
 
-    const client = new OpenAI({ apiKey });
-    const completion = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content:
-            'You are an assistant that recommends opportunities for students. Keep recommendations concise and practical.',
-        },
-        {
-          role: 'user',
-          content: `Pick top 5 best opportunities for a student and explain briefly why.\n\nOpportunities:\n${JSON.stringify(compactInput)}`,
-        },
-      ],
-      temperature: 0.4,
-    });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-    const result = completion.choices[0]?.message?.content?.trim() ?? 'No recommendation generated.';
+    const prompt = `Pick top 5 best opportunities for a student and explain briefly why.\n\nOpportunities:\n${JSON.stringify(compactInput)}`;
+    const completion = await model.generateContent(prompt);
+    
+    const result = completion.response.text().trim() || 'No recommendation generated.';
     return NextResponse.json({ result });
   } catch (error: unknown) {
     console.error('AI recommendation error:', error);
-    const message = error instanceof Error ? error.message : '';
-    if (message.includes('insufficient_quota') || message.includes('exceeded your current quota')) {
-      return NextResponse.json(
-        {
-          error:
-            'OpenAI quota exceeded for this API key. Add billing/credits in OpenAI dashboard or use another API key.',
-        },
-        { status: 429 }
-      );
+    
+    // Check if the error is related to authentication
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate recommendations';
+    if (errorMessage.includes('API key not valid') || errorMessage.includes('API key')) {
+      return NextResponse.json({ error: 'Invalid Gemini API key. Please check your .env.local file.' }, { status: 401 });
     }
-    return NextResponse.json({ error: 'Failed to generate recommendations' }, { status: 500 });
+    
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

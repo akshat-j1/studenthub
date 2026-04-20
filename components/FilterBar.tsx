@@ -1,16 +1,19 @@
 'use client';
 
-import { Sparkles, Wifi, DollarSign, X } from 'lucide-react';
+import { Sparkles, Wifi, DollarSign, Tag, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export type Filters = {
   beginnerFriendly: boolean;
   remote: boolean;
   paid: boolean;
+  free: boolean;
 };
 
 interface FilterBarProps {
   filters: Filters;
   onChange: (filters: Filters) => void;
+  availableFilters?: Array<keyof Filters>;
 }
 
 const filterConfig = [
@@ -19,34 +22,28 @@ const filterConfig = [
     label: 'Beginner-friendly',
     shortLabel: 'Beginner',
     icon: Sparkles,
-    active:
-      'border-emerald-500/70 bg-emerald-500/15 text-emerald-800 dark:text-emerald-200 shadow-sm ring-2 ring-emerald-500/25 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-950',
-    inactive:
-      'border-gray-200/90 dark:border-gray-600 bg-white/90 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50/80 dark:hover:bg-gray-800/90',
   },
   {
     key: 'remote' as keyof Filters,
     label: 'Remote',
     shortLabel: 'Remote',
     icon: Wifi,
-    active:
-      'border-blue-500/70 bg-blue-500/15 text-blue-800 dark:text-blue-200 shadow-sm ring-2 ring-blue-500/25 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-950',
-    inactive:
-      'border-gray-200/90 dark:border-gray-600 bg-white/90 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50/80 dark:hover:bg-gray-800/90',
   },
   {
     key: 'paid' as keyof Filters,
     label: 'Paid',
     shortLabel: 'Paid',
     icon: DollarSign,
-    active:
-      'border-amber-500/70 bg-amber-500/15 text-amber-900 dark:text-amber-200 shadow-sm ring-2 ring-amber-500/25 ring-offset-2 ring-offset-gray-50 dark:ring-offset-gray-950',
-    inactive:
-      'border-gray-200/90 dark:border-gray-600 bg-white/90 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500 hover:bg-gray-50/80 dark:hover:bg-gray-800/90',
+  },
+  {
+    key: 'free' as keyof Filters,
+    label: 'Free',
+    shortLabel: 'Free',
+    icon: Tag,
   },
 ];
 
-export default function FilterBar({ filters, onChange }: FilterBarProps) {
+export default function FilterBar({ filters, onChange, availableFilters }: FilterBarProps) {
   const toggle = (key: keyof Filters) => {
     onChange({ ...filters, [key]: !filters[key] });
   };
@@ -55,51 +52,59 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
   const hasActive = activeCount > 0;
 
   const clearAll = () => {
-    onChange({ beginnerFriendly: false, remote: false, paid: false });
+    onChange({ beginnerFriendly: false, remote: false, paid: false, free: false });
   };
 
   return (
-    <div className="flex flex-col items-center gap-3 w-full max-w-xl mx-auto">
-      <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
-        Refine results
-      </p>
+    <div className="flex flex-col items-center gap-4 w-full max-w-xl mx-auto mt-4">
       <div
         className="flex flex-wrap items-center justify-center gap-2"
         role="group"
         aria-label="Filter opportunities"
       >
-        {filterConfig.map(({ key, label, shortLabel, icon: Icon, active, inactive }) => {
+        {(availableFilters ? filterConfig.filter(f => availableFilters.includes(f.key)) : filterConfig).map(({ key, label, shortLabel, icon: Icon }) => {
           const isOn = filters[key];
           return (
-            <button
+            <motion.button
               key={key}
               type="button"
               aria-pressed={isOn}
               onClick={() => toggle(key)}
-              className={[
-                'inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 sm:px-4 sm:py-2 text-xs font-semibold transition-all duration-200',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-950',
-                'active:scale-[0.98]',
-                isOn ? active : inactive,
-              ].join(' ')}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className={`relative inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus:outline-none ${
+                isOn ? 'text-indigo-300' : 'text-zinc-400 bg-white/5 border border-white/10 hover:text-white hover:bg-white/10'
+              }`}
             >
-              <Icon size={13} className="flex-shrink-0 opacity-90" aria-hidden />
-              <span className="sm:hidden">{shortLabel}</span>
-              <span className="hidden sm:inline">{label}</span>
-            </button>
+              {isOn && (
+                <motion.span
+                  layoutId="activeFilter"
+                  className="absolute inset-0 bg-indigo-500/20 border border-indigo-500/40 rounded-full"
+                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                />
+              )}
+              <Icon size={14} className="flex-shrink-0 relative z-10" aria-hidden />
+              <span className="sm:hidden relative z-10">{shortLabel}</span>
+              <span className="hidden sm:inline relative z-10">{label}</span>
+            </motion.button>
           );
         })}
 
-        {hasActive && (
-          <button
-            type="button"
-            onClick={clearAll}
-            className="inline-flex items-center gap-1 rounded-full border border-dashed border-gray-300 dark:border-gray-600 bg-transparent px-3 py-1.5 sm:py-2 text-xs font-medium text-gray-500 dark:text-gray-400 hover:border-gray-400 hover:bg-gray-100/80 dark:hover:bg-gray-800/80 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
-          >
-            <X size={12} aria-hidden />
-            Clear ({activeCount})
-          </button>
-        )}
+        <AnimatePresence>
+          {hasActive && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.8, width: 0 }}
+              animate={{ opacity: 1, scale: 1, width: 'auto' }}
+              exit={{ opacity: 0, scale: 0.8, width: 0 }}
+              type="button"
+              onClick={clearAll}
+              className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-zinc-600 bg-transparent px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white hover:border-zinc-400 hover:bg-white/5 transition-colors overflow-hidden"
+            >
+              <X size={12} aria-hidden />
+              <span className="whitespace-nowrap">Clear ({activeCount})</span>
+            </motion.button>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
