@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Gift, SearchX, Bookmark } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import SearchBar from '@/components/SearchBar';
 import FilterBar, { type Filters } from '@/components/FilterBar';
@@ -41,6 +43,9 @@ function filterBySavedIds(items: Opportunity[], savedIds: string[], enabled: boo
 }
 
 export default function StudentOffersPage() {
+  const router = useRouter();
+  const { user } = useAuth();
+
   const [search, setSearch] = useState('');
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [isLoading, setIsLoading] = useState(Boolean(supabase));
@@ -53,24 +58,96 @@ export default function StudentOffersPage() {
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const { savedIds } = useSavedIds();
 
+  const [votesMap, setVotesMap] = useState<Record<string, number>>({});
+  const [votedIds, setVotedIds] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     if (!supabase) return;
 
     const supabaseClient = supabase;
     let cancelled = false;
-    const fetchOpportunities = async () => {
-      const { data, error } = await supabaseClient.from('opportunities').select('*').eq('type', 'student_offer');
+
+    const fetchAllData = async () => {
+      // 1. Fetch opportunities
+      const { data: oppsData } = await supabaseClient
+        .from('opportunities')
+        .select('*')
+        .eq('type', 'student_offer');
+
+      // 2. Fetch all votes to count them
+      const { data: allVotes } = await supabaseClient
+        .from('offer_votes')
+        .select('opportunity_id');
+
+      // 3. Fetch user votes if authenticated
+      let userVotes: { opportunity_id: string }[] = [];
+      if (user) {
+        const { data } = await supabaseClient
+          .from('offer_votes')
+          .select('opportunity_id')
+          .eq('user_id', user.id);
+        userVotes = data || [];
+      }
+
       if (!cancelled) {
-        setOpportunities((data as Opportunity[]) || []);
+        setOpportunities((oppsData as Opportunity[]) || []);
+        
+        const newVotesMap: Record<string, number> = {};
+        allVotes?.forEach(v => {
+          newVotesMap[v.opportunity_id] = (newVotesMap[v.opportunity_id] || 0) + 1;
+        });
+        setVotesMap(newVotesMap);
+
+        const newVotedIds = new Set<string>();
+        userVotes?.forEach(v => newVotedIds.add(v.opportunity_id));
+        setVotedIds(newVotedIds);
+
         setIsLoading(false);
       }
     };
 
-    fetchOpportunities();
+    fetchAllData();
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [user]);
+
+  const handleVote = async (id: string) => {
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    const isVoting = !votedIds.has(id);
+
+    // Optimistic UI update
+    setVotedIds((prev) => {
+      const newSet = new Set(prev);
+      if (isVoting) newSet.add(id);
+      else newSet.delete(id);
+      return newSet;
+    });
+    setVotesMap((prev) => ({
+      ...prev,
+      [id]: Math.max(0, (prev[id] || 0) + (isVoting ? 1 : -1))
+    }));
+
+    // DB Sync
+    if (supabase) {
+      if (isVoting) {
+        const { error } = await supabase.from('offer_votes').insert([
+          { user_id: user.id, opportunity_id: id }
+        ]);
+        if (error) console.error("Failed to insert vote:", error);
+      } else {
+        const { error } = await supabase.from('offer_votes')
+          .delete()
+          .match({ user_id: user.id, opportunity_id: id });
+        if (error) console.error("Failed to delete vote:", error);
+      }
+    }
+  };
 
   const filteredItems = useMemo(
     () => filterBySavedIds(applyFilters(opportunities, search, filters), savedIds, showSavedOnly),
@@ -84,8 +161,30 @@ export default function StudentOffersPage() {
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(item);
     });
+
+    // Sort items within each category by votes DESC
+    for (const cat in groups) {
+      groups[cat].sort((a, b) => {
+        const votesA = votesMap[a.id] || 0;
+        const votesB = votesMap[b.id] || 0;
+        return votesB - votesA;
+      });
+    }
+
     return groups;
-  }, [filteredItems]);
+  }, [filteredItems, votesMap]);
+
+  // Rank categories by total votes
+  const sortedCategoryEntries = useMemo(() => {
+    const entries = Object.entries(groupedOffers);
+    return entries.sort((a, b) => {
+      const [, itemsA] = a;
+      const [, itemsB] = b;
+      const sumA = itemsA.reduce((sum, item) => sum + (votesMap[item.id] || 0), 0);
+      const sumB = itemsB.reduce((sum, item) => sum + (votesMap[item.id] || 0), 0);
+      return sumB - sumA;
+    });
+  }, [groupedOffers, votesMap]);
 
   const formatCategory = (cat: string) => {
     if (cat.toLowerCase() === 'ai_ml') return 'AI / ML';
@@ -163,7 +262,7 @@ export default function StudentOffersPage() {
             </div>
           ) : filteredItems.length > 0 ? (
             <div className="flex flex-col gap-12">
-              {Object.entries(groupedOffers).map(([category, items], idx) => (
+              {sortedCategoryEntries.map(([category, items], idx) => (
                 <motion.div 
                   key={category} 
                   initial={{ opacity: 0, y: 20 }} 
@@ -178,7 +277,12 @@ export default function StudentOffersPage() {
                   <div className="flex overflow-x-auto gap-6 pb-6 pt-2 snap-x snap-mandatory scrollbar-hide px-1" style={{ maskImage: 'linear-gradient(to right, black 95%, transparent 100%)' }}>
                     {items.map((item) => (
                       <div key={item.id} className="min-w-[320px] w-full max-w-[350px] flex-shrink-0 snap-start">
-                        <OpportunityCard opportunity={item} />
+                        <OpportunityCard 
+                          opportunity={item} 
+                          votes={votesMap[item.id] || 0}
+                          hasVoted={votedIds.has(item.id)}
+                          onVote={handleVote}
+                        />
                       </div>
                     ))}
                   </div>

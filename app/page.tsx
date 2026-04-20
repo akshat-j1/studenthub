@@ -389,7 +389,7 @@ export default function Home() {
   );
 }
 
-function StatCard({ label, value, icon: Icon, color, index }: any) {
+function StatCard({ label, value, icon: Icon, color, index }: { label: string; value: string; icon: React.ElementType; color: string; index: number }) {
   const [count, setCount] = useState(0);
   const target = parseInt(value.replace(/\D/g, '')) || 0;
   const suffix = value.replace(/\d/g, '');

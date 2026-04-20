@@ -20,6 +20,7 @@ export default function Navbar() {
   const { setTheme, resolvedTheme } = useTheme();
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     const handler = () => setIsScrolled(window.scrollY > 10);
     window.addEventListener('scroll', handler);

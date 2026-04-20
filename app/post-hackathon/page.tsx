@@ -66,10 +66,11 @@ export default function PostHackathon() {
       setTimeout(() => {
         router.push('/#hackathons');
       }, 2000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.log("Supabase Insert Error Details:", err);
-      if (err?.message) {
-        setError(err.message);
+      const errorObj = err as Record<string, unknown>;
+      if (errorObj?.message) {
+        setError(errorObj.message as string);
       } else if (err instanceof Error) {
         setError(err.message);
       } else {

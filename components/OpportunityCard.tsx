@@ -20,6 +20,9 @@ import { useSavedIds } from '@/hooks/use-saved-ids';
 
 interface OpportunityCardProps {
   opportunity: Opportunity;
+  hasVoted?: boolean;
+  votes?: number;
+  onVote?: (id: string) => void;
 }
 
 const typeConfig = {
@@ -62,13 +65,14 @@ function getDeadlineUrgency(dateStr: string): { class: string; urgent: boolean }
   return { class: 'text-zinc-400 bg-white/5 border-white/10', urgent: false };
 }
 
-export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
+export default function OpportunityCard({ opportunity, hasVoted, votes, onVote }: OpportunityCardProps) {
   const { isSaved, toggleSaved } = useSavedIds();
   const saved = isSaved(opportunity.id);
   const config = typeConfig[opportunity.type];
   const deadlineLabel = formatDeadline(opportunity.deadline);
   const deadlineUrgency = getDeadlineUrgency(opportunity.deadline);
   const [isHovered, setIsHovered] = useState(false);
+  const displayVotes = votes ?? opportunity.votes ?? 0;
 
   return (
     <motion.div
@@ -177,6 +181,24 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
               <DollarSign size={10} />
               Paid
             </span>
+          )}
+          
+          {/* Upvote Button for Student Offers */}
+          {onVote && (opportunity.type === 'student_offer' || opportunity.type === 'offer') && (
+            <button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onVote(opportunity.id);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border transition-colors pointer-events-auto ${
+                hasVoted 
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30' 
+                  : 'bg-white/5 text-zinc-300 border-white/10 hover:bg-white/10'
+              }`}
+            >
+              👍 {displayVotes} {hasVoted ? 'Voted' : ''}
+            </button>
           )}
         </div>
         
