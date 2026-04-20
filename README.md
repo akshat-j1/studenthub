@@ -90,6 +90,7 @@ The long-term goal is to build a **student community platform**, not just a list
 
 * **Next.js (App Router)**
 * **React**
+* **JavaScript**
 * **Tailwind CSS**
 
 ### Backend / Database
