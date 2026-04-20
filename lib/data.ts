@@ -16,6 +16,7 @@ export type Opportunity = {
     logo: string;
     /** Optional external apply URL; detail page falls back to a demo URL per id */
     applyUrl?: string;
+    team_link?: string;
   };
   
   export const opportunities: Opportunity[] = [

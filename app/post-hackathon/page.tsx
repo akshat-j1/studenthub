@@ -16,7 +16,8 @@ export default function PostHackathon() {
     date: '',
     location: '',
     mode: 'online',
-    registration_link: ''
+    registration_link: '',
+    team_link: ''
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -45,7 +46,8 @@ export default function PostHackathon() {
         isBeginnerFriendly: true,
         company: formData.college,
         location: formData.location,
-        applyUrl: formData.registration_link
+        applyUrl: formData.registration_link,
+        team_link: formData.team_link || null
       };
 
       if (!supabase) {
@@ -64,12 +66,14 @@ export default function PostHackathon() {
       setTimeout(() => {
         router.push('/#hackathons');
       }, 2000);
-    } catch (err: unknown) {
-      console.error(err);
-      if (err instanceof Error) {
+    } catch (err: any) {
+      console.log("Supabase Insert Error Details:", err);
+      if (err?.message) {
+        setError(err.message);
+      } else if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError('Failed to post hackathon');
+        setError('Failed to post hackathon: ' + JSON.stringify(err));
       }
     } finally {
       setLoading(false);
@@ -205,6 +209,19 @@ export default function PostHackathon() {
                   onChange={handleChange}
                   className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="https://"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="team_link" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Team Chat Link (Telegram/WhatsApp/Discord)</label>
+                <input
+                  type="url"
+                  id="team_link"
+                  name="team_link"
+                  value={formData.team_link}
+                  onChange={handleChange}
+                  className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="https://t.me/your-group"
                 />
               </div>
 

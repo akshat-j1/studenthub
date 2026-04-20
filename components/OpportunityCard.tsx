@@ -193,6 +193,21 @@ export default function OpportunityCard({ opportunity }: OpportunityCardProps) {
           )}
         </AnimatePresence>
       </div>
+
+      {/* Team Link Button */}
+      {opportunity.type === 'hackathon' && opportunity.team_link && (
+        <div className="relative z-20 mt-2 pointer-events-auto">
+          <a
+            href={opportunity.team_link}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center justify-center w-full gap-2 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 px-4 py-2.5 text-sm font-semibold text-indigo-300 transition-colors"
+          >
+            Join Team Chat
+          </a>
+        </div>
+      )}
     </motion.div>
   );
 }
