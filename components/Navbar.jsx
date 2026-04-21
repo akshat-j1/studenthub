@@ -7,6 +7,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
+import { getCurrentUserProfile } from "@/lib/profile";
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -14,6 +15,7 @@ export default function Navbar() {
   const [logoutPending, setLogoutPending] = useState(false);
   const [guestId, setGuestId] = useState("");
   const [mounted, setMounted] = useState(false);
+  const [profileInitial, setProfileInitial] = useState("U");
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -26,6 +28,27 @@ export default function Navbar() {
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadProfileInitial = async () => {
+      if (!user) {
+        setProfileInitial("U");
+        return;
+      }
+      const { profile } = await getCurrentUserProfile();
+      if (!active) return;
+      const initial = profile?.name?.trim()?.[0]?.toUpperCase() || "U";
+      setProfileInitial(initial);
+    };
+
+    loadProfileInitial();
+
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -123,13 +146,23 @@ export default function Navbar() {
 
           <div className="flex items-center gap-3">
             {user ? (
-              <button
-                onClick={handleLogout}
-                disabled={logoutPending}
-                className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 transition-all hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-60 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
-              >
-                {logoutPending ? "Logging out..." : "Logout"}
-              </button>
+              <>
+                <Link
+                  href="/profile"
+                  title="Profile"
+                  aria-label="Go to profile"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 text-xs font-semibold text-white shadow-sm transition-opacity hover:opacity-90"
+                >
+                  {profileInitial}
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  disabled={logoutPending}
+                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-600 transition-all hover:bg-zinc-100 hover:text-zinc-900 disabled:opacity-60 dark:text-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
+                >
+                  {logoutPending ? "Logging out..." : "Logout"}
+                </button>
+              </>
             ) : (
               <>
                 {guestId && (

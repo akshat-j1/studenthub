@@ -34,6 +34,21 @@ export default function PostHackathon() {
     setError("");
 
     try {
+      if (!supabase) {
+        throw new Error(
+          "Supabase is not configured. Please check your environment variables.",
+        );
+      }
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        setError("You must be logged in");
+        return;
+      }
+
       const opportunity = {
         id: crypto.randomUUID(),
         title: formData.title,
@@ -50,15 +65,9 @@ export default function PostHackathon() {
         team_link: formData.team_link || null,
       };
 
-      if (!supabase) {
-        throw new Error(
-          "Supabase is not configured. Please check your environment variables.",
-        );
-      }
-
       const { error: supabaseError } = await supabase
         .from("opportunities")
-        .insert([opportunity]);
+        .insert([{ ...opportunity, user_id: user.id }]);
 
       if (supabaseError) {
         throw supabaseError;

@@ -13,6 +13,7 @@ import SectionHeader from "@/components/SectionHeader";
 import { useSavedIds } from "@/hooks/use-saved-ids";
 
 import { supabase } from "@/lib/supabase";
+import { attachCreatorProfiles } from "@/lib/opportunityProfiles";
 
 function applyFilters(items, search, filters) {
   return items.filter((item) => {
@@ -66,7 +67,11 @@ export default function HackathonsPage() {
         .eq("type", "hackathon");
       if (!cancelled) {
         if (!error && data) {
-          setOpportunities(data);
+          const opportunitiesWithProfiles = await attachCreatorProfiles(
+            supabaseClient,
+            data,
+          );
+          setOpportunities(opportunitiesWithProfiles);
         }
         setIsLoading(false);
       }

@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { Briefcase, SearchX, Bookmark } from "lucide-react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 
 import Navbar from "@/components/Navbar";
@@ -9,9 +10,12 @@ import SearchBar from "@/components/SearchBar";
 import FilterBar from "@/components/FilterBar";
 import OpportunityCard from "@/components/OpportunityCard";
 import SectionHeader from "@/components/SectionHeader";
+import { useAuth } from "@/contexts/AuthContext";
 import { useSavedIds } from "@/hooks/use-saved-ids";
 
+import { getCurrentUserProfile } from "@/lib/profile";
 import { supabase } from "@/lib/supabase";
+import { attachCreatorProfiles } from "@/lib/opportunityProfiles";
 
 function applyFilters(items, search, filters) {
   return items.filter((item) => {
@@ -41,6 +45,7 @@ function filterBySavedIds(items, savedIds, enabled) {
 }
 
 export default function InternshipsPage() {
+  const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [opportunities, setOpportunities] = useState([]);
   const [isLoading, setIsLoading] = useState(Boolean(supabase));
@@ -52,6 +57,8 @@ export default function InternshipsPage() {
   });
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const { savedIds } = useSavedIds();
+  const [roleLoading, setRoleLoading] = useState(true);
+  const [canPostInternship, setCanPostInternship] = useState(false);
 
   useEffect(() => {
     if (!supabase) return;
@@ -65,7 +72,11 @@ export default function InternshipsPage() {
         .eq("type", "internship");
       if (!cancelled) {
         if (!error && data) {
-          setOpportunities(data);
+          const opportunitiesWithProfiles = await attachCreatorProfiles(
+            supabaseClient,
+            data,
+          );
+          setOpportunities(opportunitiesWithProfiles);
         }
         setIsLoading(false);
       }
@@ -76,6 +87,33 @@ export default function InternshipsPage() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadRole = async () => {
+      if (!user) {
+        if (!active) return;
+        setCanPostInternship(false);
+        setRoleLoading(false);
+        return;
+      }
+
+      const { profile } = await getCurrentUserProfile();
+      if (!active) return;
+
+      const role = profile?.role?.toLowerCase();
+      setCanPostInternship(role === "employer" || role === "teacher");
+      setRoleLoading(false);
+    };
+
+    setRoleLoading(true);
+    loadRole();
+
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   const filteredItems = useMemo(
     () =>
@@ -162,6 +200,16 @@ export default function InternshipsPage() {
               icon={Briefcase}
               count={filteredItems.length}
               gradient="from-violet-500 to-blue-500"
+              action={
+                !roleLoading && canPostInternship ? (
+                  <Link
+                    href="/post-internship"
+                    className="inline-flex items-center justify-center rounded-xl bg-indigo-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_0_15px_rgba(99,102,241,0.2)] transition-colors hover:bg-indigo-400"
+                  >
+                    Post Internship
+                  </Link>
+                ) : null
+              }
             />
           </motion.div>
 

@@ -25,6 +25,7 @@ import SectionHeader from "@/components/SectionHeader";
 import { useSavedIds } from "@/hooks/use-saved-ids";
 
 import { opportunities as localOpportunities } from "@/lib/data";
+import { attachCreatorProfiles } from "@/lib/opportunityProfiles";
 import { supabase, supabaseConfigError } from "@/lib/supabase";
 
 const statsData = [
@@ -112,7 +113,11 @@ export default function Home() {
         if (error || !data || data.length === 0) {
           setOpportunities(localOpportunities);
         } else {
-          setOpportunities(data);
+          const opportunitiesWithProfiles = await attachCreatorProfiles(
+            supabaseClient,
+            data,
+          );
+          setOpportunities(opportunitiesWithProfiles);
         }
         setIsLoading(false);
       }
@@ -237,7 +242,7 @@ export default function Home() {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: "easeOut" }}
-        className="relative pt-32 pb-12 overflow-hidden"
+        className="relative overflow-hidden pb-8 pt-32"
       >
         <div className="absolute inset-0 pointer-events-none overflow-hidden flex justify-center">
           <div className="absolute top-0 w-[800px] h-[400px] bg-indigo-500/10 rounded-full blur-[120px]" />
@@ -266,113 +271,106 @@ export default function Home() {
             place. Find opportunities that match your skills and goals.
           </p>
 
-          <motion.div
-            variants={{
-              hidden: { opacity: 0 },
-              show: { opacity: 1, transition: { staggerChildren: 0.1 } },
-            }}
-            initial="hidden"
-            animate="show"
-            className="mx-auto flex max-w-2xl flex-col items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-5 backdrop-blur-sm dark:border-white/10 dark:bg-white/5"
-          >
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 10 },
-                show: { opacity: 1, y: 0 },
-              }}
-              className="w-full"
-            >
-              <SearchBar value={search} onChange={setSearch} />
-            </motion.div>
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 10 },
-                show: { opacity: 1, y: 0 },
-              }}
-              className="w-full"
-            >
-              <FilterBar
-                filters={filters}
-                onChange={setFilters}
-                availableFilters={[
-                  "beginnerFriendly",
-                  "remote",
-                  "paid",
-                  "free",
-                ]}
-              />
-            </motion.div>
-
-            <motion.div
-              variants={{
-                hidden: { opacity: 0, y: 10 },
-                show: { opacity: 1, y: 0 },
-              }}
-              className="w-full border-t border-zinc-200 pt-2 dark:border-white/5"
-            >
-              <button
-                type="button"
-                aria-pressed={showSavedOnly}
-                onClick={() => setShowSavedOnly((v) => !v)}
-                className={`inline-flex items-center justify-center w-full sm:w-auto mx-auto gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all duration-200 ${
-                  showSavedOnly
-                    ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                    : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:border-white/10 dark:bg-white/5 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
-                }`}
-              >
-                <Bookmark
-                  className={`h-4 w-4 ${showSavedOnly ? "fill-amber-400 text-amber-400" : "text-zinc-600 dark:text-zinc-400"}`}
-                  strokeWidth={2}
-                />
-                Saved only
-              </button>
-            </motion.div>
-          </motion.div>
-
-          {hasActiveQuery && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mt-6 text-sm text-zinc-600 dark:text-zinc-400"
-            >
-              {noMatches ? (
-                <>
-                  <span className="font-semibold text-zinc-900 dark:text-white">0</span> results
-                  {search.trim() && (
-                    <>
-                      {" "}
-                      for{" "}
-                      <span className="text-indigo-400">
-                        &quot;{search}&quot;
-                      </span>
-                    </>
-                  )}
-                </>
-              ) : (
-                <>
-                  Showing{" "}
-                  <span className="font-semibold text-zinc-900 dark:text-white">
-                    {totalResults}
-                  </span>{" "}
-                  results
-                  {search.trim() && (
-                    <>
-                      {" "}
-                      for{" "}
-                      <span className="text-indigo-400">
-                        &quot;{search}&quot;
-                      </span>
-                    </>
-                  )}
-                </>
-              )}
-            </motion.p>
-          )}
         </div>
       </motion.section>
 
+      {/* Search & Filters */}
+      <section className="mx-auto mt-10 max-w-4xl px-4 sm:px-6 lg:px-8">
+        <motion.div
+          variants={{
+            hidden: { opacity: 0 },
+            show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+          }}
+          initial="hidden"
+          animate="show"
+          className="mx-auto flex max-w-2xl flex-col items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-5 backdrop-blur-sm dark:border-white/10 dark:bg-white/5"
+        >
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, y: 10 },
+              show: { opacity: 1, y: 0 },
+            }}
+            className="w-full"
+          >
+            <SearchBar value={search} onChange={setSearch} />
+          </motion.div>
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, y: 10 },
+              show: { opacity: 1, y: 0 },
+            }}
+            className="w-full"
+          >
+            <FilterBar
+              filters={filters}
+              onChange={setFilters}
+              availableFilters={["beginnerFriendly", "remote", "paid", "free"]}
+            />
+          </motion.div>
+
+          <motion.div
+            variants={{
+              hidden: { opacity: 0, y: 10 },
+              show: { opacity: 1, y: 0 },
+            }}
+            className="w-full border-t border-zinc-200 pt-2 dark:border-white/5"
+          >
+            <button
+              type="button"
+              aria-pressed={showSavedOnly}
+              onClick={() => setShowSavedOnly((v) => !v)}
+              className={`mx-auto inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition-all duration-200 sm:w-auto ${
+                showSavedOnly
+                  ? "border border-amber-500/30 bg-amber-500/15 text-amber-400"
+                  : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:border-white/10 dark:bg-white/5 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
+              }`}
+            >
+              <Bookmark
+                className={`h-4 w-4 ${showSavedOnly ? "fill-amber-400 text-amber-400" : "text-zinc-600 dark:text-zinc-400"}`}
+                strokeWidth={2}
+              />
+              Saved only
+            </button>
+          </motion.div>
+        </motion.div>
+
+        {hasActiveQuery && (
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="mt-4 text-center text-sm text-zinc-600 dark:text-zinc-400"
+          >
+            {noMatches ? (
+              <>
+                <span className="font-semibold text-zinc-900 dark:text-white">0</span> results
+                {search.trim() && (
+                  <>
+                    {" "}
+                    for <span className="text-indigo-400">&quot;{search}&quot;</span>
+                  </>
+                )}
+              </>
+            ) : (
+              <>
+                Showing{" "}
+                <span className="font-semibold text-zinc-900 dark:text-white">
+                  {totalResults}
+                </span>{" "}
+                results
+                {search.trim() && (
+                  <>
+                    {" "}
+                    for <span className="text-indigo-400">&quot;{search}&quot;</span>
+                  </>
+                )}
+              </>
+            )}
+          </motion.p>
+        )}
+      </section>
+
       {/* AI Recommendations */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 mt-8">
+      <section className="mx-auto mt-12 max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
         <motion.div
           whileInView={{ opacity: 1, scale: 1 }}
           initial={{ opacity: 0, scale: 0.97 }}
@@ -385,7 +383,7 @@ export default function Home() {
             <div className="max-w-xl">
               <div className="flex items-center gap-3 mb-2">
                 <h2 className="text-xl font-syne font-bold text-zinc-900 dark:text-white sm:text-2xl">
-                  AI Recommendations
+                  🤖 AI Recommendations
                 </h2>
                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase tracking-wider border border-indigo-500/30">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
@@ -454,12 +452,12 @@ export default function Home() {
       </section>
 
       {/* Ending Soon */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <section className="mx-auto mt-12 max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
         <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-500 mb-3">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              Urgent
+              ⏳ Urgent
             </div>
             <h2 className="text-2xl font-syne font-bold text-zinc-900 dark:text-white sm:text-3xl">
               Deadlines approaching fast
@@ -510,7 +508,7 @@ export default function Home() {
       </section>
 
       {/* Stats */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <section className="mx-auto mt-10 max-w-7xl px-4 pb-12 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {statsData.map((stat, index) => (
             <StatCard key={stat.label} {...stat} index={index} />
@@ -518,7 +516,7 @@ export default function Home() {
         </div>
       </section>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-16">
+      <main className="mx-auto mt-10 max-w-7xl space-y-16 px-4 pb-20 sm:px-6 lg:px-8">
         {supabaseConfigError ? (
           <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-6 py-5 text-sm text-red-400">
             {supabaseConfigError}
@@ -628,7 +626,7 @@ function PreviewSections({
         >
           <SectionHeader
             id="hackathons"
-            title="Hackathons"
+            title="🏆 Hackathons"
             subtitle="Compete, build, and win prizes"
             icon={Trophy}
             count={filteredHackathons.length}
@@ -692,7 +690,7 @@ function PreviewSections({
         >
           <SectionHeader
             id="internships"
-            title="Internships"
+            title="💼 Internships"
             subtitle="Launch your career with top companies"
             icon={Briefcase}
             count={filteredInternships.length}
@@ -748,7 +746,7 @@ function PreviewSections({
         >
           <SectionHeader
             id="offers"
-            title="Student Offers"
+            title="🎓 Student Offers"
             subtitle="Free tools and perks for students"
             icon={Gift}
             count={filteredOffers.length}

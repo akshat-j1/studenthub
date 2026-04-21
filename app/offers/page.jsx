@@ -14,6 +14,7 @@ import SectionHeader from "@/components/SectionHeader";
 import { useSavedIds } from "@/hooks/use-saved-ids";
 
 import { supabase } from "@/lib/supabase";
+import { attachCreatorProfiles } from "@/lib/opportunityProfiles";
 
 function applyFilters(items, search, filters) {
   return items.filter((item) => {
@@ -90,7 +91,11 @@ export default function StudentOffersPage() {
       }
 
       if (!cancelled) {
-        setOpportunities(oppsData || []);
+        const opportunitiesWithProfiles = await attachCreatorProfiles(
+          supabaseClient,
+          oppsData || [],
+        );
+        setOpportunities(opportunitiesWithProfiles);
         const newVotesMap = {};
         allVotes?.forEach((v) => {
           newVotesMap[v.opportunity_id] =

@@ -104,14 +104,20 @@ export default function OpportunityCard({
   const [isHovered, setIsHovered] = useState(false);
   const displayVotes = votes ?? opportunity.votes ?? 0;
   const logoBadge = getLogoBadge(opportunity, config);
+  const creatorName = opportunity.creatorProfile?.name || "Unknown user";
+  const creatorRole = opportunity.creatorProfile?.role || null;
 
   return (
     <motion.div
-      whileHover={{ y: -6, boxShadow: "0 20px 40px rgba(99,102,241,0.15)" }}
+      whileHover={{
+        y: -5,
+        scale: 1.01,
+        boxShadow: "0 20px 40px rgba(99,102,241,0.15)",
+      }}
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 dark:border-white/10 dark:bg-[#111318]"
+      className="group relative flex flex-col gap-3.5 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 dark:border-white/10 dark:bg-[#111318]"
     >
       <Link
         href={`/opportunity/${opportunity.id}`}
@@ -161,6 +167,14 @@ export default function OpportunityCard({
         </h3>
         <p className="mt-1 truncate font-dm-sans text-sm text-zinc-600 dark:text-[#71717a]">
           {opportunity.company}
+        </p>
+        <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+          Posted by {creatorName}
+          {creatorRole && (
+            <span className="ml-1 rounded-full border border-zinc-200 bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-zinc-600 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300">
+              {creatorRole}
+            </span>
+          )}
         </p>
       </div>
 
