@@ -19,14 +19,16 @@ export default function SectionHeader({
           <Icon className="text-white" size={22} />
         </div>
         <div>
-          <h2 className="text-2xl font-syne font-bold text-white">{title}</h2>
-          <p className="text-sm font-dm-sans text-zinc-400 mt-0.5">
+          <h2 className="text-2xl font-syne font-bold text-zinc-900 dark:text-white">
+            {title}
+          </h2>
+          <p className="mt-0.5 text-sm font-dm-sans text-zinc-600 dark:text-zinc-400">
             {subtitle}
           </p>
         </div>
       </div>
       <div className="flex items-center gap-3 self-start sm:self-auto">
-        <span className="text-xs font-semibold px-3 py-1 bg-[#111318] text-zinc-400 rounded-full border border-white/5 shadow-sm">
+        <span className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-semibold text-zinc-600 shadow-sm dark:border-white/5 dark:bg-[#111318] dark:text-zinc-400">
           {count} {count === 1 ? "result" : "results"}
         </span>
         {action}

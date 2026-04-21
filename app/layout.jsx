@@ -23,9 +23,14 @@ export default function RootLayout({ children }) {
     >
       <body
         suppressHydrationWarning
-        className="font-sans antialiased text-[#f4f4f5] bg-[#09090b]"
+        className="font-sans antialiased"
       >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+          storageKey="studenthub-theme"
+        >
           <AuthProvider>
             <SavedIdsProvider>
               <AuthGuard>{children}</AuthGuard>

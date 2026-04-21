@@ -66,7 +66,28 @@ function getDeadlineUrgency(dateStr) {
       class: "text-amber-400 bg-amber-500/10 border-amber-500/20",
       urgent: true,
     };
-  return { class: "text-zinc-400 bg-white/5 border-white/10", urgent: false };
+  return {
+    class:
+      "text-zinc-600 bg-zinc-100 border-zinc-200 dark:text-zinc-400 dark:bg-white/5 dark:border-white/10",
+    urgent: false,
+  };
+}
+
+function getLogoBadge(opportunity, config) {
+  const explicitLogo =
+    typeof opportunity.logo === "string" ? opportunity.logo.trim() : "";
+  if (explicitLogo) return explicitLogo.slice(0, 3).toUpperCase();
+
+  const source = opportunity.company || opportunity.title || "";
+  const initials = source
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("");
+
+  if (initials) return initials;
+  return <config.icon size={16} aria-hidden />;
 }
 
 export default function OpportunityCard({
@@ -82,6 +103,7 @@ export default function OpportunityCard({
   const deadlineUrgency = getDeadlineUrgency(opportunity.deadline);
   const [isHovered, setIsHovered] = useState(false);
   const displayVotes = votes ?? opportunity.votes ?? 0;
+  const logoBadge = getLogoBadge(opportunity, config);
 
   return (
     <motion.div
@@ -89,7 +111,7 @@ export default function OpportunityCard({
       transition={{ type: "spring", stiffness: 260, damping: 20 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      className="group relative flex flex-col bg-[#111318] border border-white/10 rounded-2xl overflow-hidden p-5 gap-4"
+      className="group relative flex flex-col gap-4 overflow-hidden rounded-2xl border border-zinc-200 bg-white p-5 dark:border-white/10 dark:bg-[#111318]"
     >
       <Link
         href={`/opportunity/${opportunity.id}`}
@@ -101,7 +123,7 @@ export default function OpportunityCard({
       <div className="flex items-start justify-between relative z-10 pointer-events-none">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-300 text-sm font-bold shadow-sm flex-shrink-0">
-            {opportunity.logo}
+            {logoBadge}
           </div>
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-500/15 text-indigo-300 border border-indigo-500/20">
             <config.icon size={12} />
@@ -119,13 +141,13 @@ export default function OpportunityCard({
             e.stopPropagation();
             void toggleSaved(opportunity.id);
           }}
-          className="pointer-events-auto rounded-full p-2 bg-white/5 border border-white/10 hover:bg-white/10 transition-colors focus:outline-none"
+          className="pointer-events-auto rounded-full border border-zinc-200 bg-zinc-100 p-2 transition-colors hover:bg-zinc-200 focus:outline-none dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10"
         >
           <Bookmark
             className={`h-4 w-4 transition-colors ${
               saved
                 ? "fill-indigo-500 text-indigo-500 stroke-indigo-500"
-                : "fill-transparent stroke-zinc-400"
+                : "fill-transparent stroke-zinc-500 dark:stroke-zinc-400"
             }`}
             strokeWidth={2}
           />
@@ -134,10 +156,10 @@ export default function OpportunityCard({
 
       {/* Title & Company */}
       <div className="relative z-10 pointer-events-none mt-1">
-        <h3 className="font-syne text-lg font-semibold text-[#f4f4f5] leading-snug line-clamp-2">
+        <h3 className="line-clamp-2 font-syne text-lg font-semibold leading-snug text-zinc-900 dark:text-[#f4f4f5]">
           {opportunity.title}
         </h3>
-        <p className="font-dm-sans text-sm text-[#71717a] mt-1 truncate">
+        <p className="mt-1 truncate font-dm-sans text-sm text-zinc-600 dark:text-[#71717a]">
           {opportunity.company}
         </p>
       </div>
@@ -148,7 +170,7 @@ export default function OpportunityCard({
           opportunity.tags.map((tag) => (
             <span
               key={tag}
-              className="px-2 py-0.5 text-xs font-medium rounded-md bg-zinc-800/50 text-zinc-300 border border-white/5"
+              className="rounded-md border border-zinc-200 bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-700 dark:border-white/5 dark:bg-zinc-800/50 dark:text-zinc-300"
             >
               {tag}
             </span>
@@ -156,7 +178,7 @@ export default function OpportunityCard({
       </div>
 
       {/* Metadata Row */}
-      <div className="relative z-10 pointer-events-none flex items-center gap-3 text-xs text-zinc-400 mt-2">
+      <div className="relative z-10 mt-2 flex items-center gap-3 text-xs text-zinc-600 pointer-events-none dark:text-zinc-400">
         <span
           className={`flex items-center gap-1.5 px-2 py-1 rounded-md border font-medium ${deadlineUrgency.class}`}
         >
@@ -182,7 +204,7 @@ export default function OpportunityCard({
       <div className="flex-1" />
 
       {/* Bottom Row: Feature Badges & CTA */}
-      <div className="relative z-10 pointer-events-none flex items-center justify-between mt-2 pt-4 border-t border-white/5">
+      <div className="relative z-10 mt-2 flex items-center justify-between border-t border-zinc-200 pt-4 pointer-events-none dark:border-white/5">
         <div className="flex flex-wrap items-center gap-2">
           {opportunity.isBeginnerFriendly && (
             <span className="flex items-center gap-1 px-2 py-1 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
@@ -216,7 +238,7 @@ export default function OpportunityCard({
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border transition-colors pointer-events-auto ${
                   hasVoted
                     ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30"
-                    : "bg-white/5 text-zinc-300 border-white/10 hover:bg-white/10"
+                    : "border-zinc-200 bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10"
                 }`}
               >
                 👍 {displayVotes} {hasVoted ? "Voted" : ""}

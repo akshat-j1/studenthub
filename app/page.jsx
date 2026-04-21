@@ -229,7 +229,7 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[#09090b] transition-colors duration-300">
+    <div className="min-h-screen bg-zinc-50 transition-colors duration-300 dark:bg-[#09090b]">
       <Navbar />
 
       {/* Hero */}
@@ -256,12 +256,12 @@ export default function Home() {
 
           <h1 className="text-5xl sm:text-6xl md:text-7xl font-syne font-bold tracking-tight mb-6 leading-tight">
             Discover Your Next
-            <span className="block bg-gradient-to-r from-white via-indigo-200 to-white bg-clip-text text-transparent pb-2">
+            <span className="block bg-gradient-to-r from-zinc-900 via-indigo-500 to-zinc-900 bg-clip-text pb-2 text-transparent dark:from-white dark:via-indigo-200 dark:to-white">
               Big Opportunity
             </span>
           </h1>
 
-          <p className="text-lg sm:text-xl font-dm-sans text-zinc-400 max-w-2xl mx-auto mb-12 leading-relaxed">
+          <p className="mx-auto mb-12 max-w-2xl text-lg leading-relaxed text-zinc-600 sm:text-xl dark:text-zinc-400 font-dm-sans">
             Hackathons, internships, and exclusive student offers — all in one
             place. Find opportunities that match your skills and goals.
           </p>
@@ -273,7 +273,7 @@ export default function Home() {
             }}
             initial="hidden"
             animate="show"
-            className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-5 max-w-2xl mx-auto flex flex-col items-center gap-4"
+            className="mx-auto flex max-w-2xl flex-col items-center gap-4 rounded-2xl border border-zinc-200 bg-white p-5 backdrop-blur-sm dark:border-white/10 dark:bg-white/5"
           >
             <motion.div
               variants={{
@@ -308,7 +308,7 @@ export default function Home() {
                 hidden: { opacity: 0, y: 10 },
                 show: { opacity: 1, y: 0 },
               }}
-              className="w-full pt-2 border-t border-white/5"
+              className="w-full border-t border-zinc-200 pt-2 dark:border-white/5"
             >
               <button
                 type="button"
@@ -317,11 +317,11 @@ export default function Home() {
                 className={`inline-flex items-center justify-center w-full sm:w-auto mx-auto gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all duration-200 ${
                   showSavedOnly
                     ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                    : "bg-white/5 text-zinc-400 border border-white/10 hover:bg-white/10 hover:text-white"
+                    : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:border-white/10 dark:bg-white/5 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
                 }`}
               >
                 <Bookmark
-                  className={`h-4 w-4 ${showSavedOnly ? "fill-amber-400 text-amber-400" : "text-zinc-400"}`}
+                  className={`h-4 w-4 ${showSavedOnly ? "fill-amber-400 text-amber-400" : "text-zinc-600 dark:text-zinc-400"}`}
                   strokeWidth={2}
                 />
                 Saved only
@@ -333,11 +333,11 @@ export default function Home() {
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="mt-6 text-sm text-zinc-400"
+              className="mt-6 text-sm text-zinc-600 dark:text-zinc-400"
             >
               {noMatches ? (
                 <>
-                  <span className="font-semibold text-white">0</span> results
+                  <span className="font-semibold text-zinc-900 dark:text-white">0</span> results
                   {search.trim() && (
                     <>
                       {" "}
@@ -351,7 +351,7 @@ export default function Home() {
               ) : (
                 <>
                   Showing{" "}
-                  <span className="font-semibold text-white">
+                  <span className="font-semibold text-zinc-900 dark:text-white">
                     {totalResults}
                   </span>{" "}
                   results
@@ -377,14 +377,14 @@ export default function Home() {
           whileInView={{ opacity: 1, scale: 1 }}
           initial={{ opacity: 0, scale: 0.97 }}
           viewport={{ once: true }}
-          className="bg-gradient-to-br from-indigo-950/40 to-[#09090b] border border-indigo-500/20 rounded-2xl p-6 sm:p-8 relative overflow-hidden card-glow"
+          className="card-glow relative overflow-hidden rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-6 dark:border-indigo-500/20 dark:from-indigo-950/40 dark:to-[#09090b] sm:p-8"
         >
           <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px] pointer-events-none" />
 
           <div className="relative z-10 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-6">
             <div className="max-w-xl">
               <div className="flex items-center gap-3 mb-2">
-                <h2 className="text-xl sm:text-2xl font-syne font-bold text-white">
+                <h2 className="text-xl font-syne font-bold text-zinc-900 dark:text-white sm:text-2xl">
                   AI Recommendations
                 </h2>
                 <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-bold uppercase tracking-wider border border-indigo-500/30">
@@ -392,7 +392,7 @@ export default function Home() {
                   Powered by Gemini
                 </span>
               </div>
-              <p className="text-sm font-dm-sans text-indigo-200/70">
+              <p className="text-sm font-dm-sans text-indigo-700/80 dark:text-indigo-200/70">
                 Get personalized, intelligent recommendations based on your
                 current filters and searches.
               </p>
@@ -444,7 +444,7 @@ export default function Home() {
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="mt-6 rounded-xl border border-indigo-500/20 bg-[#111318]/50 backdrop-blur-sm px-6 py-5 text-sm leading-relaxed text-zinc-300 whitespace-pre-wrap font-dm-sans"
+                className="mt-6 whitespace-pre-wrap rounded-xl border border-indigo-200 bg-white/90 px-6 py-5 text-sm leading-relaxed text-zinc-700 backdrop-blur-sm dark:border-indigo-500/20 dark:bg-[#111318]/50 dark:text-zinc-300 font-dm-sans"
               >
                 {aiResult}
               </motion.div>
@@ -461,10 +461,10 @@ export default function Home() {
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
               Urgent
             </div>
-            <h2 className="text-2xl sm:text-3xl font-syne font-bold text-white">
+            <h2 className="text-2xl font-syne font-bold text-zinc-900 dark:text-white sm:text-3xl">
               Deadlines approaching fast
             </h2>
-            <p className="mt-2 text-sm font-dm-sans text-zinc-400">
+            <p className="mt-2 text-sm font-dm-sans text-zinc-600 dark:text-zinc-400">
               The top 5 opportunities closing soonest across all categories.
             </p>
           </div>
@@ -491,7 +491,7 @@ export default function Home() {
                 className="relative"
               >
                 <div className="absolute -top-3 -right-3 z-30">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-red-500/30 bg-[#09090b] text-[10px] font-bold uppercase tracking-wider text-red-400 shadow-xl">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-red-500/30 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-red-500 shadow-xl dark:bg-[#09090b] dark:text-red-400">
                     <Clock3 size={10} />
                     Ending Soon
                   </span>
@@ -501,8 +501,8 @@ export default function Home() {
             ))}
           </motion.div>
         ) : (
-          <div className="rounded-2xl border border-white/10 bg-[#111318] px-6 py-12 text-center">
-            <p className="text-sm font-medium text-zinc-400">
+          <div className="rounded-2xl border border-zinc-200 bg-white px-6 py-12 text-center dark:border-white/10 dark:bg-[#111318]">
+            <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
               No upcoming deadlines match your current search and filters.
             </p>
           </div>
@@ -549,17 +549,17 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 bg-[#09090b]">
+      <footer className="border-t border-zinc-200 bg-white dark:border-white/10 dark:bg-[#09090b]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-md bg-indigo-500 flex items-center justify-center">
               <Star size={12} className="text-white" />
             </div>
-            <span className="text-sm font-syne font-semibold text-white">
+            <span className="text-sm font-syne font-semibold text-zinc-900 dark:text-white">
               Student<span className="text-indigo-500">Hub</span>
             </span>
           </div>
-          <p className="text-xs font-dm-sans text-zinc-500">
+          <p className="text-xs font-dm-sans text-zinc-600 dark:text-zinc-500">
             Empowering students to find their next big break. All data is for
             demonstration purposes.
           </p>
@@ -596,17 +596,17 @@ function StatCard({ label, value, icon: Icon, color, index }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.1 }}
-      className="bg-[#111318] border border-white/5 rounded-2xl p-6 flex flex-col items-center justify-center gap-3 shadow-sm"
+      className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-white/5 dark:bg-[#111318]"
     >
-      <div className={`p-3 rounded-full bg-white/5 ${color}`}>
+      <div className={`rounded-full bg-zinc-100 p-3 dark:bg-white/5 ${color}`}>
         <Icon size={24} />
       </div>
       <div className="text-center">
-        <p className="text-3xl font-syne font-bold text-white">
+        <p className="text-3xl font-syne font-bold text-zinc-900 dark:text-white">
           {count}
           {suffix}
         </p>
-        <p className="text-sm font-dm-sans text-zinc-400 mt-1">{label}</p>
+        <p className="mt-1 text-sm font-dm-sans text-zinc-600 dark:text-zinc-400">{label}</p>
       </div>
     </motion.div>
   );
@@ -670,7 +670,7 @@ function PreviewSections({
             <div className="mt-8 flex justify-center">
               <Link
                 href="/hackathons"
-                className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-6 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-white/10 hover:text-white transition-colors"
+                className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
               >
                 View All Hackathons
               </Link>
@@ -681,7 +681,7 @@ function PreviewSections({
         )}
       </section>
 
-      <div className="border-t border-white/5" />
+      <div className="border-t border-zinc-200 dark:border-white/5" />
 
       {/* Internships Preview */}
       <section>
@@ -726,7 +726,7 @@ function PreviewSections({
             <div className="mt-8 flex justify-center">
               <Link
                 href="/internships"
-                className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-6 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-white/10 hover:text-white transition-colors"
+                className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
               >
                 View All Internships
               </Link>
@@ -737,7 +737,7 @@ function PreviewSections({
         )}
       </section>
 
-      <div className="border-t border-white/5" />
+      <div className="border-t border-zinc-200 dark:border-white/5" />
 
       {/* Student Offers Preview */}
       <section>
@@ -782,7 +782,7 @@ function PreviewSections({
             <div className="mt-8 flex justify-center">
               <Link
                 href="/offers"
-                className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 px-6 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-white/10 hover:text-white transition-colors"
+                className="inline-flex items-center justify-center rounded-xl border border-zinc-200 bg-white px-6 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:border-white/10 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
               >
                 View All Student Offers
               </Link>
@@ -799,11 +799,11 @@ function PreviewSections({
 function EmptyState({ type }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
-        <Star size={22} className="text-zinc-600" />
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-white/5">
+        <Star size={22} className="text-zinc-500 dark:text-zinc-600" />
       </div>
-      <p className="text-sm font-medium text-zinc-300 mb-1">No {type} found</p>
-      <p className="text-xs text-zinc-500">
+      <p className="mb-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">No {type} found</p>
+      <p className="text-xs text-zinc-500 dark:text-zinc-500">
         Try adjusting your search or filters
       </p>
     </div>
@@ -813,7 +813,7 @@ function EmptyState({ type }) {
 function SavedBookmarksEmptyState({ onExit }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#111318] shadow-sm px-8 py-10 text-center">
+      <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white px-8 py-10 text-center shadow-sm dark:border-white/10 dark:bg-[#111318]">
         <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-amber-500/10">
           <Bookmark
             className="h-8 w-8 text-amber-500"
@@ -821,17 +821,17 @@ function SavedBookmarksEmptyState({ onExit }) {
             aria-hidden
           />
         </div>
-        <h2 className="text-lg font-syne font-semibold text-white mb-2">
+        <h2 className="mb-2 text-lg font-syne font-semibold text-zinc-900 dark:text-white">
           No saved opportunities yet
         </h2>
-        <p className="text-sm font-dm-sans text-zinc-400 leading-relaxed mb-6">
+        <p className="mb-6 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400 font-dm-sans">
           Use the bookmark icon on any card to save it here. Saved items stay on
           this device.
         </p>
         <button
           type="button"
           onClick={onExit}
-          className="inline-flex items-center justify-center rounded-full px-6 py-2.5 text-sm font-semibold text-zinc-300 bg-white/5 hover:bg-white/10 hover:text-white transition-colors"
+          className="inline-flex items-center justify-center rounded-full bg-zinc-100 px-6 py-2.5 text-sm font-semibold text-zinc-700 transition-colors hover:bg-zinc-200 hover:text-zinc-900 dark:bg-white/5 dark:text-zinc-300 dark:hover:bg-white/10 dark:hover:text-white"
         >
           Browse all opportunities
         </button>
@@ -843,14 +843,14 @@ function SavedBookmarksEmptyState({ onExit }) {
 function NoResultsEmptyState({ onClear, searchQuery }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4">
-      <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#111318] shadow-sm px-8 py-10 text-center">
-        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/5">
-          <SearchX className="h-8 w-8 text-zinc-500" aria-hidden />
+      <div className="w-full max-w-md rounded-2xl border border-zinc-200 bg-white px-8 py-10 text-center shadow-sm dark:border-white/10 dark:bg-[#111318]">
+        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-zinc-100 dark:bg-white/5">
+          <SearchX className="h-8 w-8 text-zinc-500 dark:text-zinc-500" aria-hidden />
         </div>
-        <h2 className="text-lg font-syne font-semibold text-white mb-2">
+        <h2 className="mb-2 text-lg font-syne font-semibold text-zinc-900 dark:text-white">
           No opportunities match your filters
         </h2>
-        <p className="text-sm font-dm-sans text-zinc-400 leading-relaxed mb-6">
+        <p className="mb-6 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400 font-dm-sans">
           {searchQuery ? (
             <>
               Nothing matched &quot;{searchQuery}&quot; with your current

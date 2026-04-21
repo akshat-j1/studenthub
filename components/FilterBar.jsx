@@ -69,8 +69,8 @@ export default function FilterBar({ filters, onChange, availableFilters }) {
               whileTap={{ scale: 0.95 }}
               className={`relative inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors focus:outline-none ${
                 isOn
-                  ? "text-indigo-300"
-                  : "text-zinc-400 bg-white/5 border border-white/10 hover:text-white hover:bg-white/10"
+                  ? "text-indigo-600 dark:text-indigo-300"
+                  : "border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:border-white/10 dark:bg-white/5 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
               }`}
             >
               {isOn && (
@@ -99,7 +99,7 @@ export default function FilterBar({ filters, onChange, availableFilters }) {
               exit={{ opacity: 0, scale: 0.8, width: 0 }}
               type="button"
               onClick={clearAll}
-              className="inline-flex items-center gap-1.5 rounded-full border border-dashed border-zinc-600 bg-transparent px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white hover:border-zinc-400 hover:bg-white/5 transition-colors overflow-hidden"
+              className="inline-flex items-center gap-1.5 overflow-hidden rounded-full border border-dashed border-zinc-300 bg-transparent px-3 py-1.5 text-xs font-medium text-zinc-600 transition-colors hover:border-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-600 dark:text-zinc-400 dark:hover:border-zinc-400 dark:hover:bg-white/5 dark:hover:text-white"
             >
               <X size={12} aria-hidden />
               <span className="whitespace-nowrap">Clear ({activeCount})</span>
